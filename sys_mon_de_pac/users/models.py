@@ -1,6 +1,5 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
-
 
 class CustomUser(AbstractUser):
     TYPE_USERS = [
@@ -15,10 +14,15 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
     
     class Meta:
         verbose_name = "Usuários"
         verbose_name_plural = "Usuários"
+        permissions = [
+            ("list_user", "Can list users"),
+            ("retrieve_user", "Can retrieve user"),
+        ]
 
 
 class Address(models.Model):
@@ -44,7 +48,7 @@ class Address(models.Model):
 
 class Patient(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, verbose_name='Usuário')
-    address = models.OneToOneField(Address, on_delete=models.CASCADE, verbose_name='Endereço')
+    address = models.OneToOneField(Address, on_delete=models.DO_NOTHING, verbose_name='Endereço')
 
     name = models.CharField(max_length=100, verbose_name='Nome Completo')
     telephone = models.CharField(max_length=11, verbose_name='Telefone')
@@ -62,5 +66,31 @@ class Patient(models.Model):
 class Card(models.Model):
     uid = models.CharField(max_length=12, unique=True, verbose_name="Identificador Universal")
     in_use = models.BooleanField(default=False,verbose_name="Em Uso")
+    patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING)
 
-    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, verbose_name="Paciente", null=True, blank=True)
+    def __str__(self):
+        return self.uid
+
+
+    class Meta:
+        verbose_name = "Paciente"
+        verbose_name_plural = "Pacientes"
+
+
+    def set_card_on_patient(self, patient):
+        try:
+            if self.in_use:
+                raise ValueError("Cartão já em uso.")
+
+            self.in_use = True
+            self.patient = patient
+            self.save()
+        
+        except Patient.DoesNotExist:
+            raise ValueError("Paciente não encontrado")
+
+    
+    def release_card(self):
+        self.patient = None
+        self.in_use = False
+        self.save() 

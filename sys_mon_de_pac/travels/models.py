@@ -1,9 +1,10 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from users.models import Card
 
 class Bus(models.Model):
-    driver = models.Models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista')
-    monitor = models.Models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor')
+    driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista', related_name="bus_driver")
+    monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor', related_name="bus_monitor")
 
 
     def __str__(self):
@@ -24,9 +25,9 @@ class Bus(models.Model):
     
 
 class Travel(models.Model):
-    admin = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Administrador')
-    monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor')
-    driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista')
+    owner = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Criador', related_name="travel_owner")
+    monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor', related_name="travel_monitor")
+    driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista', related_name="travel_driver")
 
     bus = models.ForeignKey(Bus, on_delete=models.CASCADE, verbose_name='Ônibus')
 
@@ -58,14 +59,16 @@ class Travel(models.Model):
         verbose_name_plural = "Viagens"
 
 
-class TravelPatient(models.Model):
+class TravelBooking(models.Model):
     travel = models.ForeignKey(Travel, on_delete=models.CASCADE, verbose_name='Viagem')
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, verbose_name='Paciente')
 
     date = models.DateField(verbose_name='Data do Agendamento', auto_now_add=True)
     time = models.TimeField(verbose_name='Hora do Agendamento', auto_now_add=True)
 
-    confirmed = models.BooleanField(default=False, verbose_name='Confirmação de Agendamento')
+    confirmed = models.BooleanField(default=False, verbose_name='Confirmação do Agendamento')
+    canceled = models.BooleanField(default=False, verbose_name='Cancelamento do Agendamento')
+
 
     def __str__(self):
         return f"Viagem: {self.travel} | Paciente: {self.patient}"
@@ -76,15 +79,14 @@ class TravelPatient(models.Model):
         verbose_name_plural = "Agendamentos de Viagens dos Pacientes"
 
 
-class TravelPatientCard(models.Model):
-    travel_patient = models.OneToOneField(TravelPatient, on_delete=models.CASCADE, verbose_name='Agendamento de Viagem do Paciente')
-    card = models.OneToOneField('users.Card', on_delete=models.CASCADE, verbose_name='Cartão')
+class BoardingRecord(models.Model):
+    travel_patient = models.OneToOneField(TravelBooking, on_delete=models.CASCADE, verbose_name='Agendamento de Viagem do Paciente')
+    card = models.OneToOneField(Card, on_delete=models.CASCADE, verbose_name='Cartão')
+    bus = models.OneToOneField(Bus, on_delete=models.DO_NOTHING)
 
     # pensando se isso vale a pena, pq se eu for modificar o "on_board" eu perco a data e hora originais
     date = models.DateField(verbose_name='Data da Associação', auto_now_add=True)
     time = models.TimeField(verbose_name='Hora da Associação', auto_now_add=True)
-
-
     on_board = models.BooleanField(default=False, verbose_name='Embarcado')
 
 

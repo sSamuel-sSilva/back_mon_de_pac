@@ -55,6 +55,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'sys_mon_de_pac.urls'
+AUTH_USER_MODEL = "users.CustomUser"
+
 
 TEMPLATES = [
     {
