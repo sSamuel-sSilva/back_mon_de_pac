@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
 
+    # 'channels',
     'travels',
     'users'
 ]
@@ -73,7 +75,21 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = "sys_mon_de_pac.asgi.application"
 WSGI_APPLICATION = 'sys_mon_de_pac.wsgi.application'
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # apenas para desenvolvimento
+    },
+}
+
+# pra prod
+# "BACKEND": "channels_redis.core.RedisChannelLayer",
+# "CONFIG": {
+#     "hosts": [("127.0.0.1", 6379)],
+# },
 
 
 # Database

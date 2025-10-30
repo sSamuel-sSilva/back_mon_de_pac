@@ -43,7 +43,7 @@ class Address(models.Model):
 
 
     def __str__(self):
-        return f"{self.locality} - {self.uf}"
+        return f"{self.city} - {self.state}"
 
 
 class Patient(models.Model):
@@ -55,7 +55,7 @@ class Patient(models.Model):
     
 
     def __str__(self):
-        return self.nome
+        return self.name
     
 
     class Meta:
@@ -66,15 +66,15 @@ class Patient(models.Model):
 class Card(models.Model):
     uid = models.CharField(max_length=12, unique=True, verbose_name="Identificador Universal")
     in_use = models.BooleanField(default=False,verbose_name="Em Uso")
-    patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING)
+    patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING, blank=True, null=True)
 
     def __str__(self):
         return self.uid
 
 
     class Meta:
-        verbose_name = "Paciente"
-        verbose_name_plural = "Pacientes"
+        verbose_name = "Cartão"
+        verbose_name_plural = "Cartões"
 
 
     def set_card_on_patient(self, patient):

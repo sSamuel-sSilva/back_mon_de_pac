@@ -1,27 +1,33 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from users.models import Card
+from users.models import Card, Patient
 
 class Bus(models.Model):
-    driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista', related_name="bus_driver")
-    monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor', related_name="bus_monitor")
+    identifier_code = models.CharField(max_length=100, verbose_name='Identificador')
+    driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista Atual', related_name="bus_driver", null=True, blank=True)
+    monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor Atual', related_name="bus_monitor", null=True, blank=True)
 
 
     def __str__(self):
-        return self.id
+        return self.identifier_code
     
 
     def clean(self):
-        super.clean()
-        if self.driver.type != 'Motorista':
+        super(Bus, self).clean()
+        if self.driver and self.driver.type != 'Motorista':
             raise ValidationError({'Motorista': 'O usuário selecionado não é um motorista.'})
-        if self.monitor.type != 'Monitor':
+        if self.monitor and self.monitor.type != 'Monitor':
             raise ValidationError({'Monitor': 'O usuário selecionado não é um monitor.'})
 
 
-    def save(self, force_insert = ..., force_update = ..., using = ..., update_fields = ...):
+    def save(self, *args, **kwargs):
         self.full_clean()
-        return super().save(force_insert, force_update, using, update_fields)
+        super().save(*args, **kwargs)
+
+
+    class Meta:
+        verbose_name = "Ônibus"
+        verbose_name_plural = "Caravana"
     
 
 class Travel(models.Model):
@@ -36,22 +42,22 @@ class Travel(models.Model):
 
 
     def __str__(self):
-        return f"{self.date} - {self.time} | Criado por: {self.admin}" 
+        return f"{self.date} - {self.time} | Criado por: {self.owner}" 
 
 
     def clean(self):
-        super.clean()
-        if self.driver.type != 'Motorista':
+        super(Travel, self).clean()
+        if self.driver and self.driver.type != 'Motorista':
             raise ValidationError({'Motorista': 'O usuário selecionado não é um motorista.'})
-        if self.monitor.type != 'Monitor':
+        if self.monitor and self.monitor.type != 'Monitor':
             raise ValidationError({'Monitor': 'O usuário selecionado não é um monitor.'})
-        if self.admin.type != 'Admin':
+        if self.owner and self.owner.type != 'Admin':
             raise ValidationError({'Administrador': 'O usuário selecionado não é um administrador.'})
 
 
-    def save(self, force_insert = ..., force_update = ..., using = ..., update_fields = ...):
+    def save(self, *args, **kwargs):
         self.full_clean()
-        return super().save(force_insert, force_update, using, update_fields)
+        super().save(*args, **kwargs)
     
 
     class Meta:
@@ -69,7 +75,6 @@ class TravelBooking(models.Model):
     confirmed = models.BooleanField(default=False, verbose_name='Confirmação do Agendamento')
     canceled = models.BooleanField(default=False, verbose_name='Cancelamento do Agendamento')
 
-
     def __str__(self):
         return f"Viagem: {self.travel} | Paciente: {self.patient}"
 
@@ -81,14 +86,16 @@ class TravelBooking(models.Model):
 
 class BoardingRecord(models.Model):
     travel_patient = models.OneToOneField(TravelBooking, on_delete=models.CASCADE, verbose_name='Agendamento de Viagem do Paciente')
-    card = models.OneToOneField(Card, on_delete=models.CASCADE, verbose_name='Cartão')
-    bus = models.OneToOneField(Bus, on_delete=models.DO_NOTHING)
+    patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING, verbose_name='Paciente')
+    card = models.ForeignKey(Card, on_delete=models.DO_NOTHING, verbose_name='Cartão')
+    bus = models.ForeignKey(Bus, on_delete=models.DO_NOTHING)
 
     # pensando se isso vale a pena, pq se eu for modificar o "on_board" eu perco a data e hora originais
-    date = models.DateField(verbose_name='Data da Associação', auto_now_add=True)
-    time = models.TimeField(verbose_name='Hora da Associação', auto_now_add=True)
+    # date = models.DateField(verbose_name='Data do Registro')
+    # time = models.TimeField(verbose_name='Hora do Registro')
     on_board = models.BooleanField(default=False, verbose_name='Embarcado')
 
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Agendamento: {self.travel_patient} | Cartão: {self.card}"

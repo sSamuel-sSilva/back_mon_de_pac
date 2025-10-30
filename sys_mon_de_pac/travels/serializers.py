@@ -19,13 +19,13 @@ class TravelBookingSerializer(serializers.ModelSerializer):
         fields = ['id', 'travel', 'patient', 'date', 'time', 'confirmed']
 
 
-class BoardingRecordSerializer(models.ModelSerializer):
+class BoardingRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = TravelBooking
         fields = ['id', 'travel_patient', 'card', 'date', 'time', 'on_board']
 
 
-class BoardRecordSerializer2Nested(models.ModelSerializer):
+class BoardRecordSerializer2Nested(serializers.ModelSerializer):
     patient = serializers.CharField(source='patient.name')
     telephone = serializers.CharField(source='patient.telephone')
 
@@ -40,7 +40,7 @@ class TravelBookingSerializer2Nested(serializers.ModelSerializer):
         fields = ['id', 'patient', 'date', 'time', 'confirmed']
 
 
-class TravelTravelBooking(models.ModelSerializer):
+class TravelTravelBooking(serializers.ModelSerializer):
     bookings = TravelBookingSerializer2Nested(many=True, read_only=True)
 
     class Meta:
@@ -48,7 +48,7 @@ class TravelTravelBooking(models.ModelSerializer):
         fields = ['owner', 'monitor', 'driver', 'bus', 'date', 'time', 'bookings']
 
 
-class TravelBoardRecord(models.Model):
+class TravelBoardRecord(serializers.ModelSerializer):
     board_records = BoardRecordSerializer2Nested(many=True, read_only=True)
 
     class Meta:
