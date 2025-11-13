@@ -16,7 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     permission_classes = ActionPermission
-    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
 
 
     def get_authentication_classes(self):

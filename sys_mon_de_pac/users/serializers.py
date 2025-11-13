@@ -20,7 +20,7 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'address', 'name', 'telephone']
 
 
-class CardSerializer(serializers.Serializer):
+class CardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Card
         fields = ['id', 'uid', 'in_use', 'patient']

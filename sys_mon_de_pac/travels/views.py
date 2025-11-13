@@ -17,6 +17,7 @@ from users.permissions import ActionPermission
 
 tz = pytz.timezone("America/Sao_Paulo")
 
+
 class BusViewSet(viewsets.ModelViewSet):
     # authentication_classes = [JWTAuthetication]
     permission_classes = [ActionPermission]
@@ -109,7 +110,7 @@ class BoardingRecordViewSet(viewsets.ModelViewSet):
     # authentication_classes = [JWTAuthetication]
     queryset = queryset = Travel.objects.all()
     permission_classes = [AllowAny] # por hora vai ficar assim, depois tenho que fazer um esquema de autenticação para a placa ou então verificação por código
-    serializer_class = [BoardingRecordSerializer]
+    serializer_class = BoardingRecordSerializer
 
     @action(detail=False, methods=["post"], url_path="send_record")
     def send_record(self, request):
