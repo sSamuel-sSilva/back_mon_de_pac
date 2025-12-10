@@ -43,14 +43,14 @@ class Address(models.Model):
 
 
     def __str__(self):
-        return f"{self.city} - {self.state}"
+        return f"{self.street}, {self.number}"
 
 
 class Patient(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, verbose_name='Usuário')
     address = models.OneToOneField(Address, on_delete=models.DO_NOTHING, verbose_name='Endereço')
 
-    name = models.CharField(max_length=100, verbose_name='Nome Completo')
+    name = models.CharField(max_length=255, verbose_name='Nome Completo')
     telephone = models.CharField(max_length=11, verbose_name='Telefone')
     
 
@@ -61,6 +61,18 @@ class Patient(models.Model):
     class Meta:
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
+
+
+class Companion(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Nome Completo")
+    telephone = models.CharField(max_length=11, verbose_name="Telefone")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Acompanhante"
+        verbose_name_plural = "Acompanhantes"
 
 
 class Card(models.Model):

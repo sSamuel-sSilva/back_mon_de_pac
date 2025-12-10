@@ -37,6 +37,10 @@ class PatientAdmin(admin.ModelAdmin):
     get_cpf.short_description = "CPF"
 
 
+@admin.register(Companion)
+class CompanionAdmin(admin.ModelAdmin):
+    pass
+
 
 @admin.register(Card)
 class CardAdmin(admin.ModelAdmin):

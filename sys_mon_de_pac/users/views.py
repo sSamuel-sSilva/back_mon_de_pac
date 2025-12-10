@@ -8,20 +8,25 @@ from .permissions import ActionPermission
 
 class UserViewSet(viewsets.ModelViewSet):
     # authentication_classes = [JWTAuthetication]
-    permission_classes = [ActionPermission]
+    # permission_classes = [ActionPermission]
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
         
 
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
-    permission_classes = ActionPermission
+    # permission_classes = ActionPermission
     serializer_class = PatientSerializer
 
 
-    def get_authentication_classes(self):
-        if self.action == 'create':
-            return []    
+    # def get_authentication_classes(self):
+    #     if self.action == 'create':
+    #         return [] 
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PatientViewSerializer
+        return PatientSerializer   
     
 
 class CardViewSet(viewsets.ModelViewSet):

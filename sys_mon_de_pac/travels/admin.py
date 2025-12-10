@@ -5,19 +5,25 @@ from .models import *
 
 @admin.register(Bus)
 class BusAdmin(admin.ModelAdmin):
-    list_display = ['identifier_code', 'driver', 'monitor']
+    list_display = ['identifier_code']
+    # list_display = ['identifier_code', 'driver', 'monitor']
+
+
+@admin.register(Destiny)
+class DestinyAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Travel)
 class TravelAdmin(admin.ModelAdmin):
-    list_display = ['owner', 'monitor', 'driver', 'bus', 'date', 'time']
+    list_display = ['owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time']
 
 
 @admin.register(TravelBooking)
 class TravelBookingAdmin(admin.ModelAdmin):
-    list_display = ['travel', 'patient', 'date', 'time', 'confirmed', 'canceled']
+    list_display = ['travel', 'patient', 'date', 'time', 'status']
 
 
 @admin.register(BoardingRecord)
 class BoardingRecordAdmin(admin.ModelAdmin):
-    list_display = ['travel_patient', 'patient', 'card', 'bus']
+    list_display = ['travel_booking', 'card', 'bus']
