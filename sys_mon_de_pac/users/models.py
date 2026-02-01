@@ -17,9 +17,6 @@ class CustomUser(AbstractUser):
         if self.type == 'Admin' or self.type == 'Monitor':
             self.is_staff = True
             self.is_superuser = True
-        else:
-            self.is_staff = False
-            self.is_superuser = False
 
         super().save(*args, **kwargs)
 

@@ -10,7 +10,6 @@ from .services import TravelBookingService
 from .models import *
 from users.models import Card, Patient
 from .serializers import *
-from users.permissions import ActionPermission
 
 
 class BusViewSet(viewsets.ModelViewSet):
