@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from users.models import Card, Patient, Companion
 
 class Bus(models.Model):
-    identifier_code = models.CharField(max_length=100, verbose_name='Identificador')
+    identifier_code = models.CharField(max_length=100, verbose_name='Identificador', unique=True)
     # se pá são inúteis, já que o onibus está atrelado a viagem e essas informações já estão lá
     # driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista Atual', related_name="bus_driver", null=True, blank=True)
     # monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor Atual', related_name="bus_monitor", null=True, blank=True)
@@ -44,11 +44,11 @@ class Destiny(models.Model):
 
 
 class Travel(models.Model):
-    STATUS_CHOICE = [       
-        ("Pendente", "Pendente"),
-        ("Andamento", "Andamento"),
-        ("Concluída", "Concluída")
-    ]
+
+    class Status(models.IntegerChoices):
+        PENDENTE = 0, "Pendente"
+        ANDAMENTO = 1, "Andamento"
+        CONCLUIDA = 2, "Concluída"
     
     owner = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Criador', related_name="travel_owner")
     monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor', related_name="travel_monitor")
@@ -61,7 +61,7 @@ class Travel(models.Model):
     date = models.DateField(verbose_name='Data da Viagem')
     time = models.TimeField(verbose_name='Hora da Viagem')
 
-    status = models.CharField(max_length=10, default="Pendente", choices=STATUS_CHOICE, verbose_name="Status da Viagem")
+    status = models.IntegerField(default=Status.PENDENTE, choices=Status.choices, verbose_name="Status da Viagem")
 
 
     def __str__(self):
@@ -89,67 +89,24 @@ class Travel(models.Model):
 
 
 class TravelBooking(models.Model):
-    STATUS_CHOICE = [       
-        ("Pendente", "Pendente"),
-        ("Confirmado", "Confirmado"),
-        ("Cancelado", "Cancelado")
-    ]
+    class Status(models.IntegerChoices):
+        PENDENTE = 0, "Pendente"
+        CANCELADO = 1, "Cancelado"
+        CONFIRMADO = 2, "Confirmado"
 
     travel = models.ForeignKey(Travel, on_delete=models.CASCADE, verbose_name='Viagem')
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, verbose_name='Paciente')
     companion = models.ForeignKey('users.Companion', on_delete=models.DO_NOTHING, verbose_name='Acompanhante', null=True, blank=True)
 
-
     date = models.DateField(verbose_name='Data do Agendamento', auto_now_add=True)
     time = models.TimeField(verbose_name='Hora do Agendamento', auto_now_add=True)
 
-    status = models.CharField(max_length=10, default="Pendente", choices=STATUS_CHOICE, verbose_name="Status da Solicitação")
+    status = models.IntegerField(default=Status.PENDENTE, choices=Status.choices, verbose_name="Status da Solicitação")
 
 
     def __str__(self):
         return f"Viagem: {self.travel} | Paciente: {self.patient}"
 
-
-    def save(self, *args, **kwargs):
-        new = self.pk is None
-
-        before = None
-        if not new:
-            before = TravelBooking.objects.get(pk=self.pk).status
-        
-        vac = 0
-
-
-        if new and self.status == "Confirmado":
-            vac = -(2 if self.companion else 1)
-
-        if ((before == 'Pendente') and (self.status == 'Confirmado')):
-            vac = -(2 if self.companion else 1)
-
-        if ((before == 'Confirmado') and (self.status == 'Cancelado')):
-            vac = 2 if self.companion else 1
-
-        if ((before == 'Cancelado') and (self.status == 'Confirmado')):
-            vac = -(2 if self.companion else 1)
-
-
-        with transaction.atomic():
-            travel_qs = Travel.objects.select_for_update().filter(pk=self.travel_id)
-            
-            if not travel_qs.exists():
-                raise ValidationError("Viagem não encontrada.")
-            
-            travel = travel_qs.get()
-
-            if vac < 0 and (travel.vacations + vac < 0):
-                raise ValidationError("Não há vagas suficientes para confirmar esta reserva.")
-
-
-            Travel.objects.filter(pk=self.travel_id).update(
-                vacations=F('vacations') + vac
-            )
-
-            super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Solicitação"

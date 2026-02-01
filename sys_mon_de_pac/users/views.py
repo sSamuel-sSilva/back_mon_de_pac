@@ -1,49 +1,109 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.decorators import action
 from .models import *
 from .serializers import *
-from .permissions import ActionPermission
+from .services import PatientService
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    # authentication_classes = [JWTAuthetication]
-    # permission_classes = [ActionPermission]
+    permission_classes = [IsAdminUser]
     queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return CustomUserListRetrieveSerializer
+        return CustomUserCreateUpdateDeleteSerializer 
         
+
+# class AddressViewSet(viewsets.ModelViewSet):
+#     authentication_classes = [IsAuthenticated]
+#     queryset = Address.objects.all()
+
+
+#     def get_permissions(self):
+#         if self.action == 'list':
+#             permission_classes = [IsAdminUser]
+#         else:
+#             permission_classes = [IsAuthenticated]
+
+
+#     def get_serializer_class(self):
+#         if self.action == 'list' or self.action == 'retrieve':
+#             return AddressListRetrieveSerializer
+#         return AddressCreateUpdateDeleteSerializer
+    
 
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
-    # permission_classes = ActionPermission
-    serializer_class = PatientSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Patient.objects.all()
+        return Patient.objects.filter(user=user)
 
 
-    # def get_authentication_classes(self):
-    #     if self.action == 'create':
-    #         return [] 
+    def get_permissions(self):
+        if self.action == 'create_patient':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [p() for p in permission_classes]
+
 
     def get_serializer_class(self):
-        if self.action == 'list':
-            return PatientViewSerializer
-        return PatientSerializer   
+        if self.action == 'list' or self.action == 'retrieve':
+            return PatientListRetrieveSerializer
+        return PatientSerializer
+
+
+    @action(detail=False, methods=["post"])
+    def create_patient(self, request):
+        patient = PatientService.create_patient(request.data)
+        serializer = PatientListRetrieveSerializer(patient)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+    @action(detail=True, methods=["put", "partial_update"])
+    def update_patient(self, request, pk):
+        patient = PatientService.update_patient(self.get_object(), request.data)
+        serializer = PatientListRetrieveSerializer(patient)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     
+    
+class CompanionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = Companion.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return CompanionListRetrieveSerializer
+        return CompanionCreateUpdateDeleteSerializer  
+
 
 class CardViewSet(viewsets.ModelViewSet):
-    # authentication_classes = [JWTAuthentication]
-    permission_classes = [ActionPermission]
+    permission_classes = [IsAdminUser]
     queryset = Card.objects.all()
-    serializer_class = CardSerializer
 
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return CardListRetrieveSerializer
+        return CardCreateUpdateDeleteSerializer  
 
-    # def set_card_on_patient(self, request):
-    #     """
-    #     Função utilizada quando um administrador quer fazer o agendamento de uma pessoa.
-    #     Usuários comuns não podem acessar essa função.
-    #     """        
-
-    #     patient_id = request.data['patient_id']
-    #     card_uid = request.data['card_uid']
-
-    #     if not patient_id or not card_uid:
-    #         return Response({"error": "Usuário e/ou paciente não fornecido(s)."}, status=status.HTTP_400_BAD_REQUEST)
+# {
+#   "username": "testano rota1",
+#   "password": "12345678",
+#   "cpf": "11111111111",
+#   "name": "testa_da_silva_oliveira",
+#   "telephone": "89665321540",
+#   "cep": "65234185",
+#   "street": "R de algum lugar dai em algum canto",
+#   "number": "123456",
+#   "city": "cidade_update",
+#   "state": "estado_update",
+#   "complement": "agr tem",
+#   "neighborhood": "barro"
+# }

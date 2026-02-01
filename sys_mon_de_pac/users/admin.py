@@ -27,7 +27,7 @@ class AddressInline(admin.StackedInline):
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
-    form = PatientForm
+    # form = PatientForm
 
     list_display = ('name', 'get_cpf', 'telephone')
 

@@ -12,6 +12,18 @@ class CustomUser(AbstractUser):
     cpf = models.CharField(max_length=11, unique=True, null=False, blank=False, verbose_name='CPF')
     type = models.CharField(max_length=10, null=True, blank=True, choices=TYPE_USERS, verbose_name='Tipo de Usuário')
 
+
+    def save(self, *args, **kwargs):
+        if self.type == 'Admin' or self.type == 'Monitor':
+            self.is_staff = True
+            self.is_superuser = True
+        else:
+            self.is_staff = False
+            self.is_superuser = False
+
+        super().save(*args, **kwargs)
+
+
     def __str__(self):
         return self.username
 
@@ -19,10 +31,6 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = "Usuários"
         verbose_name_plural = "Usuários"
-        permissions = [
-            ("list_user", "Can list users"),
-            ("retrieve_user", "Can retrieve user"),
-        ]
 
 
 class Address(models.Model):

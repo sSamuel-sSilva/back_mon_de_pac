@@ -1,17 +1,32 @@
 from rest_framework import serializers
-from users.serializers import PatientViewSerializer, CompanionSerializer, AddressSerializer
+from users.serializers import PatientListRetrieveSerializer, CompanionListRetrieveSerializer
 from. models import *
+from users.models import CustomUser
 
-class BusSerializer(serializers.ModelSerializer):
+class BusListRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bus
-        # fields = ['id', 'driver', 'monitor']
         fields = ['id', 'identifier_code']
 
 
-class DestinySerializer(serializers.ModelSerializer):
+class BusCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
-        models = Destiny
+        model = Bus
+        fields = ['identifier_code']
+
+
+# ===========================================================DestinySerializers===============================================
+
+
+class DestinyListRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Destiny
+        fields = ['id', 'destiny']
+
+
+class DestinyCreateUpdateDeleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Destiny
         fields = ['destiny']
 
 
@@ -19,31 +34,49 @@ class DestinySerializer(serializers.ModelSerializer):
 class TravelListSerializer(serializers.ModelSerializer):
     qtd_patients = serializers.SerializerMethodField()
     qtd_bookings = serializers.SerializerMethodField()
-    destiny = serializers.CharField(source='destiny.destiny')
 
     class Meta:
         model = Travel
-        fields = ['id', 'destiny', 'date', 'vacations', 'qtd_patients', 'qtd_bookings', 'status']
-
+        fields = ['id', 'destiny', 'date', 'time', 'vacations', 'qtd_patients', 'qtd_bookings', 'status']
 
     def get_qtd_patients(self, obj):
-        return len(TravelBooking.objects.filter(travel=obj, status='Confirmado'))
-
+        return TravelBooking.objects.filter(travel=obj, status=2).count()
 
     def get_qtd_bookings(self, obj):
-        return len(TravelBooking.objects.filter(travel=obj, status='Pendente'))
+        return TravelBooking.objects.filter(travel=obj, status=0).count()
 
 
 class TravelRetrieveSerializer(serializers.ModelSerializer):
-    owner =     serializers.CharField(source='owner.username')
-    monitor =   serializers.CharField(source='monitor.username')
-    driver =    serializers.CharField(source='driver.username')
-    destiny =   serializers.CharField(source='destiny.destiny')
-    bus =       serializers.CharField(source='bus.identifier_code')
+    status = serializers.IntegerField()
+    status_label = serializers.CharField(
+        source="get_status_display",
+        read_only=True
+    )
+
+    owner = serializers.SerializerMethodField()
+    monitor = serializers.SerializerMethodField()
+    driver = serializers.SerializerMethodField()
+    destiny = serializers.SerializerMethodField()
+    bus = serializers.SerializerMethodField()
 
     class Meta:
         model = Travel
-        fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'vacations', 'date', 'time', 'status']
+        fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'vacations', 'date', 'time', 'status', 'status_label']
+
+    def get_owner(self, obj):
+        return obj.owner.__str__()
+
+    def get_monitor(self, obj):
+        return obj.monitor.__str__()
+
+    def get_driver(self, obj):
+        return obj.driver.__str__()
+
+    def get_destiny(self, obj):
+        return obj.destiny.__str__()
+
+    def get_bus(self, obj):
+        return obj.bus.__str__()
 
 
 class TravelCreateUpdateDeleteSerializer(serializers.ModelSerializer):
@@ -52,15 +85,23 @@ class TravelCreateUpdateDeleteSerializer(serializers.ModelSerializer):
         fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time', 'status']
 
 
+class ChangeTravelStatusSerializer(serializers.ModelSerializer):
+    status = serializers.IntegerField()
+
+    class Meta:
+        model = Travel
+        fields = ['status']
+
+
 # =========================================================TravelBookingSerializers===============================================
 class TravelBookingListSerializer(serializers.ModelSerializer):
     travel = serializers.SerializerMethodField()
     patient = serializers.SerializerMethodField()
-    has_companion = serializers.SerializerMethodField()
+    companion = serializers.SerializerMethodField()
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'has_companion', 'date', 'time', 'status']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status']
 
     def get_travel(self, obj):
         return obj.travel.__str__()
@@ -68,24 +109,66 @@ class TravelBookingListSerializer(serializers.ModelSerializer):
     def get_patient(self, obj):
         return obj.patient.__str__()
 
-    def get_has_companion(self, obj):
+    def get_companion(self, obj):
         return obj.companion is not None
 
 
 class TravelBookingRetrieveSerilizer(serializers.ModelSerializer):
+    status = serializers.IntegerField()
+    status_label = serializers.CharField(
+        source="get_status_display",
+        read_only=True
+    )
+    
     travel = TravelRetrieveSerializer()
-    patient = PatientViewSerializer()
-    companion = CompanionSerializer()
+    patient = PatientListRetrieveSerializer()
+    companion = CompanionListRetrieveSerializer()
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status', 'status_label']
 
 
 class TravelBookingCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'date', 'time', 'status']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status']
+
+
+class TravelBookingServicePostTravelBooking(serializers.Serializer):
+    travel_id = serializers.IntegerField(required=True)
+    patient_id = serializers.IntegerField(required=True)
+    companion_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, data):
+        try:
+            travel = Travel.objects.get(pk=data["travel_id"])
+        except Travel.DoesNotExist:
+            raise ValidationError({"travel_id": "Viagem não encontrada."})
+
+        try:
+            patient = Patient.objects.get(pk=data["patient_id"])
+        except Patient.DoesNotExist:
+            raise ValidationError({"patient_id": "Paciente não encontrado."})
+
+        companion = None
+        if data.get("companion_id"):
+            try:
+                companion = Companion.objects.get(pk=data["companion_id"])
+            except Companion.DoesNotExist:
+                raise ValidationError({"companion_id": "Acompanhante não encontrado."})
+
+        data["travel"] = travel
+        data["patient"] = patient
+        data["companion"] = companion
+    
+        return data
+
+class ChangeTravelBookingStatus(serializers.Serializer):
+    status = serializers.IntegerField(min_value=0, max_value=2)
+
+# class TravelBookinServiceToogleBookingStatus(serializer.Serializer):
+
 
 
 # =========================================================BoardingRecordSerializers===============================================
@@ -106,7 +189,7 @@ class BoardingRecordListSerializer(serializers.ModelSerializer):
 
 class BoardingRecordRetrieveSerializer(serializers.ModelSerializer):
     travel_booking = TravelBookingRetrieveSerilizer(source='travel_booking')
-    patient = PatientViewSerializer(source='patient')
+    patient = PatientListRetrieveSerializer(source='patient')
 
     class Meta:
         model = BoardingRecord
@@ -139,98 +222,18 @@ class AdminTravelBookingSerializer(serializers.ModelSerializer):
 
 
 class AdminTravelPendentsSerializer(serializers.ModelSerializer):
+    travel_id = serializers.SerializerMethodField()
     travel_name = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Travel
-        fields = ['id', 'travel_name']
+        fields = ['id', 'travel_id', 'travel_name']
 
 
     def get_travel_name(self, obj):
         return obj.__str__()
 
+    def get_travel_id(self, obj):
+        return obj.id
 
-
-# class BoardingRecord2TravelBookingSerializer(serializers.ModelSerializer):
-#     patient = serializers.CharField(source='patient.name')
-#     telephone = serializers.CharField(source='patient.telephone')
-#     companion = CompanionSerializer(source='travel_booking.companion')
-
-#     class Meta:
-#         model = BoardingRecord
-#         fields = ['id', 'patient', 'telephone', 'companion', 'on_board']
-
-
-# class TravelBoardRecord(serializers.ModelSerializer):
-#     board_records = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Travel
-#         fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time', 'vacations', 'board_records']
-    
-    
-#     def get_board_records(self, travel):
-#         # pega todos os BoardingRecord cuja travel_patient.travel == travel
-#         records_qs = BoardingRecord.objects.filter(
-#             travel_patient__travel=travel
-#         ).select_related('patient', 'card', 'bus', 'travel_patient')
-
-#         return BoardingRecord2TravelBookingSerializer(records_qs, many=True).data
-
-
-# class TravelBooking2TravelSerializer(serializers.ModelSerializer):
-#     travelbooking_set = TravelBookingListSerializer(many=True, read_only=True)
-
-#     class Meta:
-#         model = Travel
-#         fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time', 'travelbooking_set']
-
-
-# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-# class TravelBookingSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = TravelBooking
-#         fields = ['id', 'travel', 'patient', 'date', 'time', 'status']
-
-
-# class BoardingRecordSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = BoardingRecord
-#         # fields = ['id', 'travel_patient', 'card', 'date', 'time', 'on_board']
-#         fields = ['id', 'travel_patient', 'card', 'on_board']
-
-
-# class TravelBookingSerializer2Nested(serializers.ModelSerializer):
-#     class Meta:
-#         model = TravelBooking
-#         fields = ['id', 'patient', 'date', 'time', 'status']
-# /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-
-
-
-# class BoardRecordSerializer2Nested(serializers.ModelSerializer):
-#     patient = serializers.CharField(source='patient.name')
-#     telephone = serializers.CharField(source='patient.telephone')
-#     companion = CompanionSerializer(source='travel_patient.companion')
-
-#     class Meta:
-#         model = BoardingRecord
-#         fields = ['id', 'patient', 'telephone', 'companion', 'on_board']
-
-
-# class TravelBoardRecord(serializers.ModelSerializer):
-#     board_records = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Travel
-#         fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time', 'vacations', 'board_records']
-    
-    
-#     def get_board_records(self, travel):
-#         # pega todos os BoardingRecord cuja travel_patient.travel == travel
-#         records_qs = BoardingRecord.objects.filter(
-#             travel_patient__travel=travel
-#         ).select_related('patient', 'card', 'bus', 'travel_patient')
-
-#         return BoardRecordSerializer2Nested(records_qs, many=True).data
