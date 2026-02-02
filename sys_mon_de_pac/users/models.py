@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser, Group
+from django.core.exceptions import ValidationError
 from django.db import models
 
 class CustomUser(AbstractUser):
@@ -9,7 +10,7 @@ class CustomUser(AbstractUser):
         ('Paciente', 'Paciente'),
     ]
 
-    cpf = models.CharField(max_length=11, unique=True, null=False, blank=False, verbose_name='CPF')
+    cpf = models.CharField(max_length=11, unique=True, null=True, blank=True, verbose_name='CPF')
     type = models.CharField(max_length=10, null=True, blank=True, choices=TYPE_USERS, verbose_name='Tipo de Usuário')
 
 
@@ -18,7 +19,17 @@ class CustomUser(AbstractUser):
             self.is_staff = True
             self.is_superuser = True
 
+        self.full_clean()
         super().save(*args, **kwargs)
+
+
+    def clean(self):
+        super().clean()
+
+        if (self.type != 'Admin') and (self.type != 'Monitor') and not self.cpf:
+            raise ValidationError({
+                'cpf': 'CPF é obrigatório para este tipo de usuário.'
+            })
 
 
     def __str__(self):
