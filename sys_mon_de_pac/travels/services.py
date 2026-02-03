@@ -83,15 +83,21 @@ class TravelBookingService:
                 raise DRFNotFound("Sem cartões disponíveis.")
 
             vac = -(2 if travel_booking.companion else 1)
-            card.set_card_on_patient(patient)
+            # card.set_card_on_patient(patient)
+            card.set_use_as_true()
+            travel_booking.card = card
+            
                 
 
         # no caso de ta cancelando
         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
-            card = Card.objects.filter(patient=patient).first()
+            card = travel_booking.card
             card.release_card()
+            travel_booking.card = null
+            # card = Card.objects.filter(patient=patient).first()
+            # card.release_card()
             vac = 2 if travel_booking.companion else 1
-            card.save()
+            
 
         if vac != 0:
             travel = travel_booking.travel

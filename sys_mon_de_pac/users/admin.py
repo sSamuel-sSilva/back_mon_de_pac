@@ -44,14 +44,17 @@ class CompanionAdmin(admin.ModelAdmin):
 
 @admin.register(Card)
 class CardAdmin(admin.ModelAdmin):
-    list_display = ('uid', 'in_use', 'get_patient')
+    # list_display = ('uid', 'in_use', 'get_patient')
+    list_display = ('uid', 'in_use')
     search_fields = ('uid',)
 
-    def get_patient(self, obj):
-        patient = obj.patient
-        if patient:
-            return patient
+    # def get_patient(self, obj):
+    #     patient = obj.patient
+    #     if patient:
+    #         return patient
         
-        return "None"
+    #     return "None"
 
-    get_patient.short_description = "Paciente Atual"
+    # get_patient.short_description = "Paciente Atual"
+
+    

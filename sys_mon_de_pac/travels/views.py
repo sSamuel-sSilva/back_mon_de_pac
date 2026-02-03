@@ -82,6 +82,14 @@ class TravelViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+    @action(detail=True, methods=["get"])
+    def get_bookigns_by_travel_app(self, request, pk):
+        travel = self.get_object()
+        bookings = TravelBooking.objects.filter(status=2, travel=travel)
+        serializer = TravelBookingUserInfo(bookings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class TravelBookingViewSet(viewsets.ModelViewSet):
     queryset = queryset = TravelBooking.objects.all()
 

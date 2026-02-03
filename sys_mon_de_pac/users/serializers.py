@@ -104,10 +104,12 @@ class CompanionListRetrieveSerializer(serializers.ModelSerializer):
 class CardCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Card
-        fields = ['uid', 'in_use', 'patient']
+        # fields = ['uid', 'in_use', 'patient']
+        fields = ['uid', 'in_use']
 
 
 class CardListRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Card
-        fields = ['id', 'uid', 'in_use', 'patient']
+        # fields = ['id', 'uid', 'in_use', 'patient']
+        fields = ['id', 'uid', 'in_use']

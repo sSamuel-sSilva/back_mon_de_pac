@@ -79,6 +79,7 @@ class TravelRetrieveSerializer(serializers.ModelSerializer):
     driver = serializers.SerializerMethodField()
     destiny = serializers.SerializerMethodField()
     bus = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
 
     class Meta:
         model = Travel
@@ -107,6 +108,10 @@ class TravelRetrieveSerializer(serializers.ModelSerializer):
 
     def get_qtd_bookings(self, obj):
         return TravelBooking.objects.filter(travel=obj, status=0).count()
+
+    def get_date(self, obj):
+        date = obj.date.strftime("%d/%m/%Y")
+        return date
 
 
 class TravelCreateUpdateDeleteSerializer(serializers.ModelSerializer):
@@ -201,7 +206,8 @@ class ChangeTravelBookingStatus(serializers.Serializer):
 class TravelBookingUserInfo(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name')
     patient_number = serializers.CharField(source='patient.telephone')
-    
+    card = serializers.SerializerMethodField()
+
     status_label = serializers.CharField(
         source="get_status_display",
         read_only=True
@@ -210,6 +216,10 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
     class Meta:
         model = TravelBooking
         fields = ['patient_name', 'patient_number', 'card', 'companion', 'status_label']
+
+
+    def get_card(self, obj):
+        return obj.card.__str__()
 
 
 # =========================================================BoardingRecordSerializers===============================================

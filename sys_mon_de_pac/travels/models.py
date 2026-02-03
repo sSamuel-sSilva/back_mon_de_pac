@@ -65,7 +65,8 @@ class Travel(models.Model):
 
 
     def __str__(self):
-        return f"Viagem para {self.destiny} - {self.date} - {self.time}" 
+        date = self.date.strftime("%d/%m/%Y")
+        return f"Viagem para {self.destiny} - {date} - {self.time}" 
 
 
     def clean(self):
@@ -97,6 +98,8 @@ class TravelBooking(models.Model):
     travel = models.ForeignKey(Travel, on_delete=models.CASCADE, verbose_name='Viagem')
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, verbose_name='Paciente')
     companion = models.ForeignKey('users.Companion', on_delete=models.DO_NOTHING, verbose_name='Acompanhante', null=True, blank=True)
+
+    card = models.ForeignKey('users.Card', on_delete=models.DO_NOTHING, verbose_name='Cartão do usuário', null=True, blank=True)
 
     date = models.DateField(verbose_name='Data do Agendamento', auto_now_add=True)
     time = models.TimeField(verbose_name='Hora do Agendamento', auto_now_add=True)

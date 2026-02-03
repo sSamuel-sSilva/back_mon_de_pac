@@ -94,7 +94,7 @@ class Companion(models.Model):
 class Card(models.Model):
     uid = models.CharField(max_length=12, unique=True, verbose_name="Identificador Universal")
     in_use = models.BooleanField(default=False,verbose_name="Em Uso")
-    patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING, blank=True, null=True)
+    # patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING, blank=True, null=True)
 
     def __str__(self):
         return self.uid
@@ -105,20 +105,21 @@ class Card(models.Model):
         verbose_name_plural = "Cartões"
 
 
-    def set_card_on_patient(self, patient):
-        try:
-            if self.in_use:
-                raise ValueError("Cartão já em uso.")
+    # def set_card_on_patient(self, patient):
+    def set_use_as_true(self, patient):
+        # try:
+        if self.in_use:
+            raise ValueError("Cartão já em uso.")
 
-            self.in_use = True
-            self.patient = patient
-            self.save()
+        self.in_use = True
+        # self.patient = patient
+        self.save()
         
-        except Patient.DoesNotExist:
-            raise ValueError("Paciente não encontrado")
+        # except Patient.DoesNotExist:
+        #     raise ValueError("Paciente não encontrado")
 
     
     def release_card(self):
-        self.patient = None
         self.in_use = False
         self.save() 
+        # self.patient = None
