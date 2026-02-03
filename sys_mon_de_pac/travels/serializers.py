@@ -32,12 +32,23 @@ class DestinyCreateUpdateDeleteSerializer(serializers.ModelSerializer):
 
 # ===========================================================TravelSerializers===============================================
 class TravelListSerializer(serializers.ModelSerializer):
+    travel_str = serializers.SerializerMethodField()
     qtd_patients = serializers.SerializerMethodField()
     qtd_bookings = serializers.SerializerMethodField()
+    destiny = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+
+    status_label = serializers.CharField(
+        source="get_status_display",
+        read_only=True
+    )
 
     class Meta:
         model = Travel
-        fields = ['id', 'destiny', 'date', 'time', 'vacations', 'qtd_patients', 'qtd_bookings', 'status']
+        fields = ['id', 'travel_str', 'destiny', 'date', 'time', 'vacations', 'qtd_patients', 'qtd_bookings', 'status', 'status_label']
+
+    def get_travel_str(self, obj):
+        return obj.__str__()
 
     def get_qtd_patients(self, obj):
         return TravelBooking.objects.filter(travel=obj, status=2).count()
@@ -45,8 +56,18 @@ class TravelListSerializer(serializers.ModelSerializer):
     def get_qtd_bookings(self, obj):
         return TravelBooking.objects.filter(travel=obj, status=0).count()
 
+    def get_destiny(self, obj):
+        return obj.destiny.__str__()
+
+    def get_date(self, obj):
+        date = obj.date.strftime("%d/%m/%Y")
+        return date
+
 
 class TravelRetrieveSerializer(serializers.ModelSerializer):
+    travel_str = serializers.SerializerMethodField()
+    qtd_patients = serializers.SerializerMethodField()
+    qtd_bookings = serializers.SerializerMethodField()
     status = serializers.IntegerField()
     status_label = serializers.CharField(
         source="get_status_display",
@@ -61,7 +82,10 @@ class TravelRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Travel
-        fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'vacations', 'date', 'time', 'status', 'status_label']
+        fields = ['id', 'travel_str', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'vacations', 'qtd_patients', 'qtd_bookings', 'date', 'time', 'status', 'status_label']
+
+    def get_travel_str(self, obj):
+        return obj.__str__()
 
     def get_owner(self, obj):
         return obj.owner.__str__()
@@ -77,6 +101,12 @@ class TravelRetrieveSerializer(serializers.ModelSerializer):
 
     def get_bus(self, obj):
         return obj.bus.__str__()
+
+    def get_qtd_patients(self, obj):
+        return TravelBooking.objects.filter(travel=obj, status=2).count()
+
+    def get_qtd_bookings(self, obj):
+        return TravelBooking.objects.filter(travel=obj, status=0).count()
 
 
 class TravelCreateUpdateDeleteSerializer(serializers.ModelSerializer):
@@ -126,7 +156,7 @@ class TravelBookingRetrieveSerilizer(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status', 'status_label']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status_label']
 
 
 class TravelBookingCreateUpdateDeleteSerializer(serializers.ModelSerializer):
@@ -167,8 +197,19 @@ class TravelBookingServicePostTravelBooking(serializers.Serializer):
 class ChangeTravelBookingStatus(serializers.Serializer):
     status = serializers.IntegerField(min_value=0, max_value=2)
 
-# class TravelBookinServiceToogleBookingStatus(serializer.Serializer):
 
+class TravelBookingUserInfo(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='patient.name')
+    patient_number = serializers.CharField(source='patient.telephone')
+    
+    status_label = serializers.CharField(
+        source="get_status_display",
+        read_only=True
+    )
+
+    class Meta:
+        model = TravelBooking
+        fields = ['patient_name', 'patient_number', 'card', 'companion', 'status_label']
 
 
 # =========================================================BoardingRecordSerializers===============================================
