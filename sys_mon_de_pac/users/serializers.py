@@ -37,6 +37,15 @@ class PatientSerializer(serializers.ModelSerializer):
         return obj.address.__str__()
  
 
+class PatientDetailSerializer(serializers.ModelSerializer):
+    user = CustomUserListRetrieveSerializer()
+    address = AddressListRetrieveSerializer()
+    
+    class Meta:
+        model = Patient
+        fields = ['user', 'name', 'telephone', 'address']
+
+
 class PatientCreateUpdateSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, required=False)
     password = serializers.CharField(write_only=True, min_length=8, required=False)
@@ -97,8 +106,8 @@ class CompanionCreateUpdateDeleteSerializer(serializers.ModelSerializer):
 class CompanionListRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Companion
-        fields = ['name', 'telephone']
-        read_only_fields = ['name', 'telephone']
+        fields = ['id', 'name', 'telephone']
+        read_only_fields = ['id', 'name', 'telephone']
 
 
 class CardCreateUpdateDeleteSerializer(serializers.ModelSerializer):

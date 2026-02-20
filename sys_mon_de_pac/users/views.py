@@ -54,8 +54,10 @@ class PatientViewSet(viewsets.ModelViewSet):
 
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action == 'list':
             return PatientListRetrieveSerializer
+        elif self.action == 'retrieve':
+            return PatientDetailSerializer
         return PatientSerializer
 
 

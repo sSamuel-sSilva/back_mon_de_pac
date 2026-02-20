@@ -199,14 +199,17 @@ class TravelBookingServicePostTravelBooking(serializers.Serializer):
     
         return data
 
+
 class ChangeTravelBookingStatus(serializers.Serializer):
     status = serializers.IntegerField(min_value=0, max_value=2)
 
 
 class TravelBookingUserInfo(serializers.ModelSerializer):
+    patient_id = serializers.CharField(source='patient.id')
     patient_name = serializers.CharField(source='patient.name')
     patient_number = serializers.CharField(source='patient.telephone')
     card = serializers.SerializerMethodField()
+    companion = CompanionListRetrieveSerializer()
 
     status_label = serializers.CharField(
         source="get_status_display",
@@ -215,7 +218,7 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['patient_name', 'patient_number', 'card', 'companion', 'status_label']
+        fields = ['patient_id', 'patient_name', 'patient_number', 'card', 'companion', 'status_label']
 
 
     def get_card(self, obj):
