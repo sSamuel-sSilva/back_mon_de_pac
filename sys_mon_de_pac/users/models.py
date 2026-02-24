@@ -10,7 +10,7 @@ class CustomUser(AbstractUser):
     #     ('Paciente', 'Paciente'),
     # ]
 
-    class Type(models.IntegerChoices):
+    class UserType(models.IntegerChoices):
         ADMIN = 0, "Admin"
         MOTORISTA = 1, "Motorista"
         MONITOR = 2, "Monitor"
@@ -18,13 +18,16 @@ class CustomUser(AbstractUser):
 
 
     cpf = models.CharField(max_length=11, unique=True, null=True, blank=True, verbose_name='CPF')
-    type = models.IntegerField(default=Type.Paciente, null=True, blank=True, choices=Type.choices, verbose_name='Tipo de Usuário')
+    type = models.IntegerField(default=UserType.PACIENTE, choices=UserType.choices, verbose_name='Tipo de Usuário')
 
 
     def save(self, *args, **kwargs):
         if self.type == 'Admin' or self.type == 'Monitor':
             self.is_staff = True
             self.is_superuser = True
+
+        if self.is_staff or self.is_superuser:
+            self.type = 0 
 
         self.full_clean()
         super().save(*args, **kwargs)
