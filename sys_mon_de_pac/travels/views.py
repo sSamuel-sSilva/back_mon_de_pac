@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .services import TravelBookingService
@@ -10,7 +11,7 @@ from .services import TravelBookingService
 from .models import *
 from users.models import Card, Patient
 from .serializers import *
-
+from .filters import TravelBookingFilter
 
 class BusViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
@@ -33,7 +34,7 @@ class DestinyViewSet(viewsets.ModelViewSet):
 
 
 class TravelViewSet(viewsets.ModelViewSet):
-    queryset = Travel.objects.all()
+    queryset = Travel.objects.all() 
 
     def get_permissions(self):
         if self.action == 'list':
@@ -77,21 +78,13 @@ class TravelViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def get_bookigns_by_travel(self, request, pk):
         qs = TravelBooking.objects.filter(travel=pk)
-        print(qs)
         serializer = AdminTravelBookingSerializer(qs, many=True)
         return Response(serializer.data)
 
 
-    @action(detail=True, methods=["get"])
-    def get_bookigns_by_travel_app(self, request, pk):
-        travel = self.get_object()
-        bookings = TravelBooking.objects.filter(status=2, travel=travel)
-        serializer = TravelBookingUserInfo(bookings, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class TravelBookingViewSet(viewsets.ModelViewSet):
     queryset = queryset = TravelBooking.objects.all()
+    filterset_class = TravelBookingFilter
 
     def get_queryset(self):
         user = self.request.user
@@ -153,6 +146,7 @@ class TravelBookingViewSet(viewsets.ModelViewSet):
         serializer = TravelBookingCreateUpdateDeleteSerializer(booking)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
     #URL = /travels/travel_booking/change_travel_booking_status/{id}/
     @action(detail=True, methods=["put", "patch"])
     def change_travel_booking_status(self, request, pk):
@@ -160,6 +154,14 @@ class TravelBookingViewSet(viewsets.ModelViewSet):
 
         serializer = TravelBookingRetrieveSerilizer(self.get_object())
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @action(detail=False, methods=["get"])
+    def get_bookigns_by_travel_app(self, request):
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+        serializer = TravelBookingUserInfo(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK) 
         
 
 class BoardingRecordViewSet(viewsets.ModelViewSet):

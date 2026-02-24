@@ -207,7 +207,9 @@ class ChangeTravelBookingStatus(serializers.Serializer):
 class TravelBookingUserInfo(serializers.ModelSerializer):
     patient_id = serializers.CharField(source='patient.id')
     patient_name = serializers.CharField(source='patient.name')
-    patient_number = serializers.CharField(source='patient.telephone')
+    patient_number =serializers.SerializerMethodField()
+    date_booking = serializers.SerializerMethodField()
+    time_booking = serializers.SerializerMethodField()
     card = serializers.SerializerMethodField()
     companion = CompanionListRetrieveSerializer()
 
@@ -218,11 +220,24 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['patient_id', 'patient_name', 'patient_number', 'card', 'companion', 'status_label']
+        fields = ['patient_id', 'patient_name', 'patient_number', 'card', 'companion', 'status', 'status_label', 'date_booking', 'time_booking']
 
 
     def get_card(self, obj):
         return obj.card.__str__()
+
+
+    def get_date_booking(self, obj):
+        date = obj.date.strftime("%d/%m/%Y")
+        return date
+
+    def get_time_booking(self, obj):
+        time = obj.time.strftime("%H:%M")
+        return time
+
+    def get_patient_number(self, obj):
+        tel = obj.patient.telephone
+        return f"({tel[:2]}) {tel[2:7]}-{tel[7:]}" 
 
 
 # =========================================================BoardingRecordSerializers===============================================

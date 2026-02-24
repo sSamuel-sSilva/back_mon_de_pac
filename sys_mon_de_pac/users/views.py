@@ -68,7 +68,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-    @action(detail=True, methods=["put", "partial_update"])
+    @action(detail=True, methods=["put", "patch"])
     def update_patient(self, request, pk):
         patient = PatientService.update_patient(self.get_object(), request.data)
         serializer = PatientListRetrieveSerializer(patient)
