@@ -2,9 +2,11 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.decorators import action
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import *
 from .serializers import *
 from .services import PatientService
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -16,6 +18,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return CustomUserListRetrieveSerializer
         return CustomUserCreateUpdateDeleteSerializer 
         
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 # class AddressViewSet(viewsets.ModelViewSet):
 #     authentication_classes = [IsAuthenticated]

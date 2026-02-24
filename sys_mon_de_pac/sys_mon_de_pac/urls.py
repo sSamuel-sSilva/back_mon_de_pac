@@ -20,7 +20,7 @@ from django.contrib import admin
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from django.urls import path, include, re_path
-
+from users.views import CustomTokenObtainPairView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -43,7 +43,7 @@ urlpatterns = [
     path('admin/', admin.site.urls), # ajeitar para a rota de admin não ser admin, ou então remover e usar só a do front
     path('users/', include('users.urls')),
     path('travels/', include('travels.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # depois lembrar para isso só ficar em desenvolvimento

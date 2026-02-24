@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 
 
@@ -13,6 +14,14 @@ class CustomUserListRetrieveSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email', 'cpf', 'type']
         read_only_fields = ['id', 'username', 'email', 'cpf', 'type']
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['type'] = self.user.type
+
+        return data
 
 
 class AddressCreateUpdateDeleteSerializer(serializers.ModelSerializer):
