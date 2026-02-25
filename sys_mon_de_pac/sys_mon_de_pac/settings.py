@@ -29,6 +29,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "192.168.18.115", "127.0.0.1", "10.228.94.30", "10.9.141.40", "10.9.131.52"]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",]
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
@@ -44,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     'corsheaders',
     'rest_framework',
     'drf_yasg',

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from users.serializers import PatientListRetrieveSerializer, CompanionListRetrieveSerializer
 from. models import *
 from users.models import CustomUser
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+ 
 
 class BusListRetrieveSerializer(serializers.ModelSerializer):
     class Meta:

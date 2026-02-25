@@ -2,17 +2,39 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from django_filters.rest_framework import DjangoFilterBackend
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .services import TravelBookingService
-
 from .models import *
 from users.models import Card, Patient
 from .serializers import *
 from .filters import TravelBookingFilter
 
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_api(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    user = authenticate(username=username, password=password)
+    
+    if user:
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user': {
+                'username': user.username,
+                'type': getattr(user, 'type', 'patient') # Pega o tipo do utilizador (admin/monitor/patient)
+            }
+        })
+    else:
+        return Response({'error': 'Credenciais inválidas'}, status=400)
+    
 class BusViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = Bus.objects.all()
