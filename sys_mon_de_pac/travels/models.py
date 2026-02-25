@@ -1,7 +1,7 @@
 from django.db import models, transaction
 from django.db.models import F
 from django.core.exceptions import ValidationError
-from users.models import Card, Patient, Companion
+from users.models import Card, Patient, Companion, CustomUser
 
 class Bus(models.Model):
     identifier_code = models.CharField(max_length=100, verbose_name='Identificador', unique=True)
@@ -71,11 +71,11 @@ class Travel(models.Model):
 
     def clean(self):
         super(Travel, self).clean()
-        if self.driver and self.driver.type != 'Motorista':
+        if self.driver and self.driver.type != CustomUser.UserType.MOTORISTA:
             raise ValidationError({'Motorista': 'O usuário selecionado não é um motorista.'})
-        if self.monitor and self.monitor.type != 'Monitor':
+        if self.monitor and self.monitor.type != CustomUser.UserType.MONITOR:
             raise ValidationError({'Monitor': 'O usuário selecionado não é um monitor.'})
-        if self.owner and self.owner.type != 'Admin':
+        if self.owner and self.owner.type != CustomUser.UserType.ADMIN:
             raise ValidationError({'Administrador': 'O usuário selecionado não é um administrador.'})
 
 

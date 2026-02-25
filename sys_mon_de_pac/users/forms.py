@@ -1,5 +1,5 @@
 from django import forms
-from .models import Patient, CustomUser, Address
+from .models import *
 
 class PatientForm(forms.ModelForm):
     username = forms.CharField(label='username')

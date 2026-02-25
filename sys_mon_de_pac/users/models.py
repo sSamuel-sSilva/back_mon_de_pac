@@ -3,13 +3,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 class CustomUser(AbstractUser):
-    # TYPE_USERS = [
-    #     ('Admin', 'Admin'),
-    #     ('Motorista', 'Motorista'),
-    #     ('Monitor', 'Monitor'),
-    #     ('Paciente', 'Paciente'),
-    # ]
-
     class UserType(models.IntegerChoices):
         ADMIN = 0, "Admin"
         MOTORISTA = 1, "Motorista"
@@ -22,21 +15,23 @@ class CustomUser(AbstractUser):
 
 
     def save(self, *args, **kwargs):
-        if self.type == 'Admin' or self.type == 'Monitor':
+        if self.type in [self.UserType.ADMIN, self.UserType.MONITOR]:
             self.is_staff = True
-            self.is_superuser = True
 
-        if self.is_staff or self.is_superuser:
+        if self.type == self.UserType.ADMIN:
+            self.is_superuser = True
             self.type = 0 
 
-        self.full_clean()
+        if self.type == self.UserType.MONITOR:
+            self.type = 2
+
         super().save(*args, **kwargs)
 
 
     def clean(self):
         super().clean()
 
-        if (self.type != 'Admin') and (self.type != 'Monitor') and (not self.is_superuser) and not self.cpf:
+        if self.type not in [self.UserType.ADMIN, self.UserType.MONITOR] and not self.is_superuser and not self.cpf:
             raise ValidationError({
                 'cpf': 'CPF é obrigatório para este tipo de usuário.'
             })
