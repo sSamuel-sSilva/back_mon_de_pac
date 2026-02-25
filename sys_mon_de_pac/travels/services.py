@@ -24,8 +24,6 @@ class TravelBookingService:
         patient = serializer.validated_data["patient"]
         companion = serializer.validated_data["companion"]
 
-        # print(patient.user != request.user)
-        # print(not request.user.is_staff)
         if (patient.user != request.user) and (not request.user.is_staff):
             raise DRFPermissionDenied("Usuário não tem permissão para realizar a operação.")
 

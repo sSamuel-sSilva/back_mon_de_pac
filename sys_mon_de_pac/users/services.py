@@ -59,7 +59,7 @@ class PatientService:
                 user.username = data['username']
             if 'cpf' in data:
                 user.cpf = data['cpf']
-            if 'password' in data:                      # futuramente criar uma rota para isso, para poder fazer verificação por email
+            if 'password' in data:
                 user.set_password(data['password'])
             user.save()
 
