@@ -16,4 +16,5 @@ router.register(r'board_record', BoardingRecordViewSet, basename='board_record')
 
 urlpatterns = [
     path('login/', login_api, name='api_login'),
+    path('', include(router.urls)),
 ]

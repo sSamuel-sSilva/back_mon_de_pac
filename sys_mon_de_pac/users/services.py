@@ -18,7 +18,7 @@ class PatientService:
                 username = data["username"],
                 password = data["password"],
                 cpf = data["cpf"],
-                type='Paciente'
+                type= 3
             )
 
             address = Address.objects.create(
