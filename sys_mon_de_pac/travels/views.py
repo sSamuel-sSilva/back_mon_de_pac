@@ -161,7 +161,28 @@ class TravelBookingViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)
         serializer = TravelBookingUserInfo(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK) 
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @action(detail=False, methods=["get"])
+    def get_patients_by_travel(self, request):
+        # travel_id = request.query_params.get('travel', None)
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+        serializer = PatientByTravel(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+    @action(detail=False, methods=["get"])
+    def get_companions_by_travel(self, request):
+        # travel_id = request.query_params.get('travel', None)
+        queryset = self.get_queryset()
+        queryset = queryset.filter(companion__isnull=False)
+        queryset = self.filter_queryset(queryset)
+        print(queryset)
+        serializer = CompanionByTravel(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
         
 
 class BoardingRecordViewSet(viewsets.ModelViewSet):

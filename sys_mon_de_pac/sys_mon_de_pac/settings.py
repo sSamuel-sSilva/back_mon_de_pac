@@ -27,7 +27,10 @@ SECRET_KEY = 'django-insecure-g_oafx@rh0by5t5oa3_i8a^q@bruinkm97l^8e_3sjwyts69v)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "192.168.18.115", "127.0.0.1", "10.228.94.30", "10.9.141.40", "10.9.131.52", "10.9.131.198", "172.26.192.1"]
+ALLOWED_HOSTS = ["localhost", "192.168.18.115", "127.0.0.1",
+                "10.228.94.30", "10.9.141.40", "10.9.131.52",
+                "10.9.131.198", "172.26.192.1", "10.9.131.247",
+                "10.9.131.199", "10.9.131.115"]
 
 
 if DEBUG:
@@ -124,7 +127,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=720),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=2),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }

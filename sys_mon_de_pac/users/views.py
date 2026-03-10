@@ -16,7 +16,12 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
             return CustomUserListRetrieveSerializer
-        return CustomUserCreateUpdateDeleteSerializer 
+        return CustomUserCreateUpdateDeleteSerializer
+
+
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny], authentication_classes=[])
+    def test_connection(self, request):
+        return Response(status=status.HTTP_200_OK)
         
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -51,12 +56,12 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Patient.objects.filter(user=user)
 
 
-    def get_permissions(self):
-        if self.action == 'create_patient':
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [p() for p in permission_classes]
+    # def get_permissions(self):
+    #     if self.action == 'create_patient':
+    #         permission_classes = [AllowAny]
+    #     else:
+    #         permission_classes = [IsAuthenticated]
+    #     return [p() for p in permission_classes]
 
 
     def get_serializer_class(self):
@@ -67,7 +72,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         return PatientSerializer
 
 
-    @action(detail=False, methods=["post"])
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny], authentication_classes=[])
     def create_patient(self, request):
         patient = PatientService.create_patient(request.data)
         serializer = PatientListRetrieveSerializer(patient)
@@ -100,6 +105,7 @@ class CardViewSet(viewsets.ModelViewSet):
         if self.action == 'list' or self.action == 'retrieve':
             return CardListRetrieveSerializer
         return CardCreateUpdateDeleteSerializer  
+
 
 # {
 #   "username": "testano rota1",

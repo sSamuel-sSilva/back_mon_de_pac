@@ -211,7 +211,7 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
     date_booking = serializers.SerializerMethodField()
     time_booking = serializers.SerializerMethodField()
     card = serializers.SerializerMethodField()
-    companion = CompanionListRetrieveSerializer()
+    has_companion = serializers.SerializerMethodField()
 
     status_label = serializers.CharField(
         source="get_status_display",
@@ -220,12 +220,14 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['patient_id', 'patient_name', 'patient_number', 'card', 'companion', 'status', 'status_label', 'date_booking', 'time_booking']
+        fields = ['id', 'patient_id', 'patient_name', 'patient_number', 'card', 'status', 'status_label', 'date_booking', 'time_booking', 'has_companion']
 
 
     def get_card(self, obj):
         return obj.card.__str__()
 
+    def get_has_companion(self, obj):
+        return obj.companion != None
 
     def get_date_booking(self, obj):
         date = obj.date.strftime("%d/%m/%Y")
@@ -237,7 +239,35 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
 
     def get_patient_number(self, obj):
         tel = obj.patient.telephone
-        return f"({tel[:2]}) {tel[2:7]}-{tel[7:]}" 
+        return f"({tel[:2]}) {tel[2:7]}-{tel[7:]}"
+
+    
+class CompanionByTravel(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='companion.id')
+    patient_id = serializers.IntegerField(source='patient.id')
+    name = serializers.CharField(source='companion.name')
+    telephone = serializers.CharField(source='companion.telephone')
+
+    class Meta:
+        model = TravelBooking
+        fields = ['id', 'patient_id', 'name', 'telephone']
+
+
+class PatientByTravel(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="patient.id")
+    name = serializers.CharField(source="patient.name")
+    telephone = serializers.CharField(source="patient.telephone")
+    cep = serializers.CharField(source="patient.address.cep")
+    street = serializers.CharField(source="patient.address.street")
+    number = serializers.CharField(source="patient.address.number")
+    city = serializers.CharField(source="patient.address.city")
+    state = serializers.CharField(source="patient.address.state")
+    complement = serializers.CharField(source="patient.address.complement")
+    neighborhood = serializers.CharField(source="patient.address.neighborhood")
+
+    class Meta:
+        model = TravelBooking
+        fields = ['id', 'name', 'telephone', 'cep', 'street', 'number', 'city', 'state', 'complement', 'neighborhood']
 
 
 # =========================================================BoardingRecordSerializers===============================================
