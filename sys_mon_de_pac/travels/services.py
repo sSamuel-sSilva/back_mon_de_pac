@@ -91,7 +91,7 @@ class TravelBookingService:
         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
             card = travel_booking.card
             card.release_card()
-            travel_booking.card = null
+            travel_booking.card = None
             # card = Card.objects.filter(patient=patient).first()
             # card.release_card()
             vac = 2 if travel_booking.companion else 1

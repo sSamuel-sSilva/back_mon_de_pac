@@ -32,6 +32,10 @@ ALLOWED_HOSTS = ["localhost", "192.168.18.115", "127.0.0.1",
                 "10.9.131.198", "172.26.192.1", "10.9.131.247",
                 "10.9.131.199", "10.9.131.115"]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",]
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
@@ -47,7 +51,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     'corsheaders',
     'rest_framework',
     'drf_yasg',
@@ -127,8 +130,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=720),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=2),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 

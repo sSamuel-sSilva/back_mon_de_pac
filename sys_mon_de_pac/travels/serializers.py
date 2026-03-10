@@ -2,6 +2,8 @@ from rest_framework import serializers
 from users.serializers import PatientListRetrieveSerializer, CompanionListRetrieveSerializer
 from. models import *
 from users.models import CustomUser
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+ 
 
 class BusListRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
@@ -117,7 +119,7 @@ class TravelRetrieveSerializer(serializers.ModelSerializer):
 class TravelCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Travel
-        fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'bus', 'date', 'time', 'status']
+        fields = ['id', 'owner', 'monitor', 'driver', 'destiny', 'vacations', 'bus', 'date', 'time', 'status']
 
 
 class ChangeTravelStatusSerializer(serializers.ModelSerializer):
@@ -161,7 +163,7 @@ class TravelBookingRetrieveSerilizer(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status_label']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status_label', 'status']
 
 
 class TravelBookingCreateUpdateDeleteSerializer(serializers.ModelSerializer):
@@ -303,21 +305,29 @@ class BoardingRecordCreateUpdateDelete(serializers.ModelSerializer):
 
 # ============================================================CustomizedSerializers================================================
 class AdminTravelBookingSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.name')
-    patient_number = serializers.CharField(source='patient.telephone')
-    patient_address = serializers.CharField(source='patient.address')
-    travel_destiny = serializers.CharField(source='travel.destiny')
-    travel_vacations = serializers.CharField(source='travel.vacations')
+    travel_id = serializers.IntegerField(source='travel.id', read_only=True)
+    patient_id = serializers.IntegerField(source='patient.id', read_only=True)
+    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    patient_number = serializers.CharField(source='patient.telephone', read_only=True)
+    patient_address = serializers.CharField(source='patient.address', read_only=True)
+    travel_destiny = serializers.CharField(source='travel.destiny', read_only=True)
+    travel_vacations = serializers.IntegerField(source='travel.vacations', read_only=True)
     patient_complement = serializers.SerializerMethodField()
-
 
     class Meta:
         model = TravelBooking
-        fields = ['patient_name', 'patient_number', 'patient_address', 'patient_complement', 'travel_vacations', 'companion' , 'status', 'travel_destiny', 'date', 'time']
-
+        # Adicionamos 'id', 'travel_id' e 'patient_id' aqui:
+        fields = [
+            'id', 'travel_id', 'patient_id', 'patient_name', 'patient_number', 
+            'patient_address', 'patient_complement', 'travel_vacations', 
+            'companion', 'status', 'travel_destiny', 'date', 'time'
+        ]
 
     def get_patient_complement(self, obj):
-        return obj.patient.user.address.complement
+        try:
+            return obj.patient.user.address.complement
+        except AttributeError:
+            return ""
 
 
 class AdminTravelPendentsSerializer(serializers.ModelSerializer):
