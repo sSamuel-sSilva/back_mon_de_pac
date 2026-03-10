@@ -111,7 +111,7 @@ class Card(models.Model):
 
 
     # def set_card_on_patient(self, patient):
-    def set_use_as_true(self, patient):
+    def set_use_as_true(self):
         # try:
         if self.in_use:
             raise ValueError("Cartão já em uso.")

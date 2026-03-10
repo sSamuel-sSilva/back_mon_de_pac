@@ -19,6 +19,9 @@ class CustomUserListRetrieveSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
+        # Adicione estas duas linhas abaixo:
+        data['id'] = self.user.id
+        data['username'] = self.user.username
         data['type'] = self.user.type
 
         return data

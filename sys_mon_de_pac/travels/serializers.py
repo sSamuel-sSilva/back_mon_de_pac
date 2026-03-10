@@ -163,7 +163,7 @@ class TravelBookingRetrieveSerilizer(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status_label']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status_label', 'status']
 
 
 class TravelBookingCreateUpdateDeleteSerializer(serializers.ModelSerializer):
