@@ -214,6 +214,7 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
     time_booking = serializers.SerializerMethodField()
     card = serializers.SerializerMethodField()
     has_companion = serializers.SerializerMethodField()
+    monitor_device_code = serializers.SerializerMethodField()
 
     status_label = serializers.CharField(
         source="get_status_display",
@@ -222,7 +223,7 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
 
     class Meta:
         model = TravelBooking
-        fields = ['id', 'patient_id', 'patient_name', 'patient_number', 'card', 'status', 'status_label', 'date_booking', 'time_booking', 'has_companion']
+        fields = ['id', 'patient_id', 'patient_name', 'patient_number', 'card', 'status', 'status_label', 'date_booking', 'time_booking', 'has_companion', 'need_vital_monitor_device', 'monitor_device_code']
 
 
     def get_card(self, obj):
@@ -242,6 +243,9 @@ class TravelBookingUserInfo(serializers.ModelSerializer):
     def get_patient_number(self, obj):
         tel = obj.patient.telephone
         return f"({tel[:2]}) {tel[2:7]}-{tel[7:]}"
+
+    def get_monitor_device_code(self, obj):
+        return obj.vital_monitor_device.__str__()
 
     
 class CompanionByTravel(serializers.ModelSerializer):

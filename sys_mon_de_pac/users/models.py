@@ -98,7 +98,7 @@ class Companion(models.Model):
 
 class Card(models.Model):
     uid = models.CharField(max_length=12, unique=True, verbose_name="Identificador Universal")
-    in_use = models.BooleanField(default=False,verbose_name="Em Uso")
+    in_use = models.BooleanField(default=False, verbose_name="Em Uso")
     # patient = models.ForeignKey(Patient, on_delete=models.DO_NOTHING, blank=True, null=True)
 
     def __str__(self):
@@ -128,3 +128,29 @@ class Card(models.Model):
         self.in_use = False
         self.save() 
         # self.patient = None
+
+
+class VitalMonitorDevice(models.Model):
+    code = models.CharField(max_length=12, unique=True, verbose_name="Identificador Universal")
+    in_use = models.BooleanField(default=False,verbose_name="Em Uso") 
+
+    def __str__(self):
+        return self.code
+
+
+    class Meta:
+        verbose_name = "Dispositivo de Monitoração de Sinais Vitais"
+        verbose_name_plural = "Dispositivos de Monitoração de Sinais Vitais"
+
+    
+    def set_use_as_true(self):
+        if self.in_use:
+            raise ValueError("Dispositivo já em uso")
+
+        self.in_use = True
+        self.save()
+
+
+    def release_device(self):
+        self.in_use = False
+        self.save()

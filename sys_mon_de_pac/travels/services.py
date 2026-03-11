@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 class TravelBookingService:
     @staticmethod
     @transaction.atomic
-    def create_booking(travel_id, patient_id, companion_id, request):
+    def create_booking(travel_id, patient_id, companion_id, need_device, request):
         serializer = TravelBookingServicePostTravelBooking(data={
             "travel_id": travel_id, 
             "patient_id": patient_id, 
@@ -80,8 +80,12 @@ class TravelBookingService:
             if not card:
                 raise DRFNotFound("Sem cartões disponíveis.")
 
+            if travel_booking.need_vital_monitor_device:
+                device = VitalMonitorDevice.objects.filter(in_use=False).first()
+                if not device:
+                    raise DRFNotFound("Sem dispositivos de monitoramento de sinais vitais.")
+
             vac = -(2 if travel_booking.companion else 1)
-            # card.set_card_on_patient(patient)
             card.set_use_as_true()
             travel_booking.card = card
             
@@ -91,9 +95,12 @@ class TravelBookingService:
         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
             card = travel_booking.card
             card.release_card()
+
+            if travel_booking.need_vital_monitor_device:
+                device = travel_booking.vital_monitor_device
+                device.release_device()
+
             travel_booking.card = None
-            # card = Card.objects.filter(patient=patient).first()
-            # card.release_card()
             vac = 2 if travel_booking.companion else 1
             
 

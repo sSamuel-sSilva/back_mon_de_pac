@@ -51,3 +51,9 @@ class CompanionAdmin(admin.ModelAdmin):
 class CardAdmin(admin.ModelAdmin):
     list_display = ('uid', 'in_use')
     search_fields = ('uid',)
+
+
+@admin.register(VitalMonitorDevice)
+class VitalMonitorDeviceAdmin(admin.ModelAdmin):
+    list_display = ('code', 'in_use')
+    search_fields = ('uid',)

@@ -100,6 +100,8 @@ class TravelBooking(models.Model):
     companion = models.ForeignKey('users.Companion', on_delete=models.DO_NOTHING, verbose_name='Acompanhante', null=True, blank=True)
 
     card = models.ForeignKey('users.Card', on_delete=models.DO_NOTHING, verbose_name='Cartão do usuário', null=True, blank=True)
+    need_vital_monitor_device = models.BooleanField(default=False, verbose_name="Paciente precisa de monitoramento?")
+    vital_monitor_device = models.ForeignKey('users.VitalMonitorDevice', on_delete=models.DO_NOTHING, verbose_name='Dispositivo de Monitoramento do usuário', null=True, blank=True)
 
     date = models.DateField(verbose_name='Data do Agendamento', auto_now_add=True)
     time = models.TimeField(verbose_name='Hora do Agendamento', auto_now_add=True)
