@@ -94,10 +94,12 @@ class TravelBookingService:
         # no caso de ta cancelando
         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
             card = travel_booking.card
+            travel_booking.card = None
             card.release_card()
 
             if travel_booking.need_vital_monitor_device:
                 device = travel_booking.vital_monitor_device
+                travel_booking.vital_monitor_device = None
                 device.release_device()
 
             travel_booking.card = None
