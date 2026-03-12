@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 class TravelBookingService:
     @staticmethod
     @transaction.atomic
-    def create_booking(travel_id, patient_id, companion_id, need_device, request):
+    def create_booking(travel_id, patient_id, companion_id, request, need_device=False):
         serializer = TravelBookingServicePostTravelBooking(data={
             "travel_id": travel_id, 
             "patient_id": patient_id, 
@@ -26,7 +26,6 @@ class TravelBookingService:
 
         if (patient.user != request.user) and (not request.user.is_staff):
             raise DRFPermissionDenied("Usuário não tem permissão para realizar a operação.")
-
 
         if travel.status != 0:
             raise DRFValidationError("Viagem já em andamento.")
@@ -46,11 +45,11 @@ class TravelBookingService:
             travel=travel,
             patient=patient,
             companion=companion,
-            status=0
+            status=0,
+            need_vital_monitor_device=need_device 
         )
 
         return booking
-
 
     @staticmethod
     @transaction.atomic
@@ -88,22 +87,24 @@ class TravelBookingService:
             vac = -(2 if travel_booking.companion else 1)
             card.set_use_as_true()
             travel_booking.card = card
-            
+            travel_booking.save() # Salva a associação do cartão
                 
 
         # no caso de ta cancelando
         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
             card = travel_booking.card
+            if card:
+                card.release_card()
             travel_booking.card = None
-            card.release_card()
 
             if travel_booking.need_vital_monitor_device:
                 device = travel_booking.vital_monitor_device
+                if device:
+                    device.release_device()
                 travel_booking.vital_monitor_device = None
-                device.release_device()
 
-            travel_booking.card = None
             vac = 2 if travel_booking.companion else 1
+            travel_booking.save() # <-- ESSA LINHA É CRUCIAL PARA SALVAR A DESVINCULAÇÃO DO CARTÃO
             
 
         if vac != 0:
@@ -114,6 +115,7 @@ class TravelBookingService:
 
 
 class BoardingRecordService:
+    @staticmethod
     def create_booking(travel_booking_id, uid_card, bus_id):
         current_travel_booking = get_object_or_404(TravelBooking, pk=travel_booking_id)
         current_card = get_object_or_404(Card, uid=uid_card)
@@ -130,8 +132,8 @@ class BoardingRecordService:
 
         current_boarding_record.on_board = not current_boarding_record.on_board
 
-        now = datetime.now(tz)
-        current_boarding_record.time = now().strftime("%H:%M:%S")
+        now = timezone.now()
+        current_boarding_record.time = now.strftime("%H:%M:%S")
         current_boarding_record.save()
 
         return current_boarding_record

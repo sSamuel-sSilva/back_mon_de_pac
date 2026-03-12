@@ -3,30 +3,16 @@ from django.db.models import F
 from django.core.exceptions import ValidationError
 from users.models import Card, Patient, Companion, CustomUser
 
+# Importações dos Signals
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
 class Bus(models.Model):
     identifier_code = models.CharField(max_length=100, verbose_name='Identificador', unique=True)
-    # se pá são inúteis, já que o onibus está atrelado a viagem e essas informações já estão lá
-    # driver = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Motorista Atual', related_name="bus_driver", null=True, blank=True)
-    # monitor = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, verbose_name='Monitor Atual', related_name="bus_monitor", null=True, blank=True)
-
 
     def __str__(self):
         return self.identifier_code
     
-
-    # def clean(self):
-    #     super(Bus, self).clean()
-    #     if self.driver and self.driver.type != 'Motorista':
-    #         raise ValidationError({'Motorista': 'O usuário selecionado não é um motorista.'})
-    #     if self.monitor and self.monitor.type != 'Monitor':
-    #         raise ValidationError({'Monitor': 'O usuário selecionado não é um monitor.'})
-
-
-    # def save(self, *args, **kwargs):
-    #     self.full_clean()
-    #     super().save(*args, **kwargs)
-
-
     class Meta:
         verbose_name = "Ônibus"
         verbose_name_plural = "Caravana"
@@ -135,3 +121,31 @@ class BoardingRecord(models.Model):
     class Meta:
         verbose_name = "Registro de Embarque"
         verbose_name_plural = "Registros de Embarque"
+
+
+# =========================================================================
+# GATILHOS (SIGNALS) DE SEGURANÇA ABSOLUTA
+# =========================================================================
+
+@receiver(pre_delete, sender=TravelBooking)
+def release_resources_on_booking_delete(sender, instance, **kwargs):
+    """
+    Sempre que um TravelBooking (solicitação) for deletado do banco
+    (seja por exclusão direta, seja porque o Paciente dono dela foi deletado).
+    Usamos o comando .update() para forçar a gravação direto no banco de dados
+    e evitar que a cascata do Django ignore a liberação.
+    """
+    from users.models import Card, VitalMonitorDevice
+    
+    # 1. Libera o cartão RFID (se existir) direto no Banco de Dados
+    if getattr(instance, 'card_id', None):
+        Card.objects.filter(pk=instance.card_id).update(in_use=False)
+        
+    # 2. Libera o dispositivo vital (se existir) direto no Banco de Dados
+    if getattr(instance, 'need_vital_monitor_device', False) and getattr(instance, 'vital_monitor_device_id', None):
+        VitalMonitorDevice.objects.filter(pk=instance.vital_monitor_device_id).update(in_use=False)
+        
+    # 3. Devolve a vaga para a viagem (se a pessoa estava confirmada) direto no Banco de Dados
+    if instance.status == 2 and getattr(instance, 'travel_id', None):
+        vac = 2 if instance.companion_id else 1
+        Travel.objects.filter(pk=instance.travel_id).update(vacations=F('vacations') + vac)

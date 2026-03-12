@@ -153,18 +153,37 @@ class TravelBookingViewSet(viewsets.ModelViewSet):
 
 
     #URL = /travels/travel_booking/post_travel_booking/
+    # @action(detail=False, methods=["post"])
+    # def post_travel_booking(self, request):
+    #     travel_id = request.data.get("travel_id")
+    #     patient_id = request.data.get("patient_id")
+    #     companion_id = request.data.get("companion_id")
+    #     need_device = request.data.get("need_device")
+
+    #     booking = TravelBookingService.create_booking(
+    #         travel_id=travel_id,
+    #         patient_id=patient_id,
+    #         companion_id=companion_id,
+    #         need_device=need_device,
+    #         request=request)
+
+    #     serializer = TravelBookingCreateUpdateDeleteSerializer(booking)
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    #URL = /travels/travel_booking/post_travel_booking/
     @action(detail=False, methods=["post"])
     def post_travel_booking(self, request):
         travel_id = request.data.get("travel_id")
         patient_id = request.data.get("patient_id")
         companion_id = request.data.get("companion_id")
-        need_device = request.data.get("need_device")
+        # Captura do request, se não existir, define como False
+        need_device = request.data.get("need_device", False) 
 
         booking = TravelBookingService.create_booking(
             travel_id=travel_id,
             patient_id=patient_id,
             companion_id=companion_id,
-            need_device=need_device,
+            need_device=need_device, # Repassando o valor para o service
             request=request)
 
         serializer = TravelBookingCreateUpdateDeleteSerializer(booking)
