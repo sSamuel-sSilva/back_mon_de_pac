@@ -9,13 +9,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
-    "django-insecure-dev-key"
+    "KpG0l8R9x2Qw6sF3YbT7cM4V1nZ5eA8dJ0pL2uR9hG6Wq"
 )
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", "localhost:5173"]
 
 
 CSRF_TRUSTED_ORIGINS = [
