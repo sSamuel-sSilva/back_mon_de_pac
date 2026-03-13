@@ -2,6 +2,15 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 
+class adressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = '__all__'
+
+class PatientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = '__all__'
 
 class CustomUserCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -103,11 +112,13 @@ class PatientCreateUpdateSerializer(serializers.Serializer):
 
 
 class PatientListRetrieveSerializer(serializers.ModelSerializer):
+    # Adicione esta linha para expandir o endereço!
+    address = AddressListRetrieveSerializer(read_only=True)
+
     class Meta:
         model = Patient
         fields = ['id', 'user', 'address', 'name', 'telephone']
         read_only_fields = ['id', 'user', 'address', 'name', 'telephone']
-
 
 class CompanionCreateUpdateDeleteSerializer(serializers.ModelSerializer):
     class Meta:
