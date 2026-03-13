@@ -5,9 +5,9 @@ import dj_database_url
 
 import os
 
-DJANGO_SUPERUSER_USERNAME = os.environ.get("admin123")
-DJANGO_SUPERUSER_EMAIL = os.environ.get("admin123@example.com")
-DJANGO_SUPERUSER_PASSWORD = os.environ.get("teste136")
+DJANGO_SUPERUSER_USERNAME = os.environ.get("DJANGO_SUPERUSER_USERNAME")
+DJANGO_SUPERUSER_EMAIL = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+DJANGO_SUPERUSER_PASSWORD = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
