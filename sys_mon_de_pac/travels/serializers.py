@@ -136,9 +136,14 @@ class TravelBookingListSerializer(serializers.ModelSerializer):
     patient = serializers.SerializerMethodField()
     companion = serializers.SerializerMethodField()
 
+    status_label = serializers.CharField(
+        source="get_status_display",
+        read_only=True
+    )
+
     class Meta:
         model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status']
+        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status', 'status_label']
 
     def get_travel(self, obj):
         return obj.travel.__str__()
