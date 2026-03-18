@@ -55,7 +55,7 @@ class Address(models.Model):
     number = models.CharField(max_length=10, verbose_name='Número')
     city = models.CharField(max_length=50, verbose_name='Cidade')
     state = models.CharField(max_length=50, verbose_name='Estado')
-    complement = models.CharField(max_length=128, verbose_name="Complemento")
+    complement = models.CharField(max_length=128, verbose_name="Complemento", blank=True)
     neighborhood = models.CharField(max_length=128, verbose_name="Bairro")
 
 
@@ -85,7 +85,7 @@ class Patient(models.Model):
 
 
 class Companion(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, verbose_name='Usuário')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, verbose_name='Usuário')
     name = models.CharField(max_length=255, verbose_name="Nome Completo")
     telephone = models.CharField(max_length=11, verbose_name="Telefone")
 

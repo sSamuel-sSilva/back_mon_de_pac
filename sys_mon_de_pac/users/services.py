@@ -15,6 +15,8 @@ class PatientCreateService:
             raise serializers.ValidationError({"cpf": "CPF já cadastrado por outro usuário"})
 
         user = CustomUser.objects.create_user(**user_data, type=CustomUser.UserType.PACIENTE)
+        user.set_password(user_data["password"])
+        
         address = Address.objects.create(user=user, **address_data)
         patient = Patient.objects.create(user=user, address=address, **patient_data)
 

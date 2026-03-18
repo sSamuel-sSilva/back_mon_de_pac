@@ -5,7 +5,8 @@ from .models import Address, Card, Companion, CustomUser, Patient, VitalMonitorD
 
 class CustomUserWriteSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ["username", "cpf", "type"]
+        model = CustomUser
+        fields = ["username", "password", "cpf", "type"]
 
     
 class CustomUserReadSerializer(serializers.ModelSerializer):
@@ -18,7 +19,7 @@ class CustomUserReadSerializer(serializers.ModelSerializer):
 class AddressWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ["user", "cep", "street", "number", "city", "state", "complement", "neighborhood"]
+        fields = ["cep", "street", "number", "city", "state", "complement", "neighborhood"]
 
 
 class AddressReadSerializer(serializers.ModelSerializer):
@@ -31,7 +32,7 @@ class AddressReadSerializer(serializers.ModelSerializer):
 class PatientWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
-        fields = ["user", "address", "name", "telephone"]
+        fields = ["name", "telephone"]
 
 
 class CompanionWriteSerializer(serializers.ModelSerializer):

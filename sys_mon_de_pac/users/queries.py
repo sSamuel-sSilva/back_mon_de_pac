@@ -1,4 +1,6 @@
 from .models import Patient, Companion
+from django.shortcuts import get_object_or_404
+
 
 class PatientQuery:
     @staticmethod
@@ -19,6 +21,7 @@ class PatientQuery:
                     "cpf": p.user.cpf
                 },
                 "address": {
+                    "id": p.address.pk,
                     "city": p.address.city,
                     "state": p.address.state
                 }
@@ -32,8 +35,8 @@ class PatientQuery:
         queryset = Patient.objects.select_related("user", "address")
         if not user.is_staff:
             queryset = queryset.filter(user=user)
-
-        p = queryset.get(id=p_id)
+        
+        p = get_object_or_404(queryset, id=p_id)
 
         return {
             "id": p.pk,
@@ -45,6 +48,7 @@ class PatientQuery:
                 "cpf": p.user.cpf,
             },
             "address": {
+                "id": p.address.pk,
                 "cep": p.address.cep,
                 "street": p.address.street,
                 "number": p.address.number,
@@ -78,7 +82,7 @@ class CompanionQuery:
             ]
         
         if pk:
-            c = queryset.get(id=pk)
+            c = get_object_or_404(queryset, id=pk)
             return  {
                     "id": c.pk, 
                     "name": c.name,

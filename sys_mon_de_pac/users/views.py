@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
-from sys_mon_de_pac.users.permission import CustomPermission
+from .permissions import CustomPermission
 from .models import *
 from .serializers import *
 from .services import *
@@ -67,7 +67,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             patient_serializer.validated_data)
         
         res = PatientQuery.get_patient_detail(request.user, patient.pk)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(res, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None, *args, **kwargs):
         patient = Patient.objects.get(pk=pk)
@@ -110,6 +110,11 @@ class CompanionViewSet(viewsets.ModelViewSet):
     queryset = Companion.objects.all()
     permission_classes = [CustomPermission]
 
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return CompanionReadSerializer
+        return CompanionWriteSerializer
+
     def list(self, request, *args, **kwargs):
         data = CompanionQuery.get_companion_s(request.user, many=True)
         return Response(data, status=status.HTTP_200_OK)
@@ -119,6 +124,7 @@ class CompanionViewSet(viewsets.ModelViewSet):
         if not data:
             return Response({"detail": "Not found."}, status=404)
         return Response(data, status=status.HTTP_200_OK)
+    
 
     def get_serializer_class(self):
         if self.action in ["create", "update"]:
@@ -133,3 +139,13 @@ class CardViewSet(viewsets.ModelViewSet):
         if self.action in ["list", "retrieve"]:
             return CardReadSerializer
         return CardWriteSerializer  
+
+
+class VitalMonitorDeviceViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = VitalMonitorDevice.objects.all()
+
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return VitalMonitorDeviceReadSerializer
+        return VitalMonitorDeviceWriteSerializer
