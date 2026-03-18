@@ -1,136 +1,81 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import *
+from .models import Address, Card, Companion, CustomUser, Patient, VitalMonitorDevice
 
 
-class CustomUserCreateUpdateDeleteSerializer(serializers.ModelSerializer):
+class CustomUserWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ["username", "cpf", "type"]
+
+    
+class CustomUserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'cpf', 'type']
+        fields = ["id", "username", "cpf", "type"]
+        read_only_fields = fields
 
 
-class CustomUserListRetrieveSerializer(serializers.ModelSerializer):
+class AddressWriteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomUser
-        fields = ['id', 'username', 'email', 'cpf', 'type']
-        read_only_fields = ['id', 'username', 'email', 'cpf', 'type']
+        model = Address
+        fields = ["user", "cep", "street", "number", "city", "state", "complement", "neighborhood"]
+
+
+class AddressReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ["id", "user", "cep", "street", "number", "city", "state", "complement", "neighborhood"]
+        read_only_fields = fields
+
+
+class PatientWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ["user", "address", "name", "telephone"]
+
+
+class CompanionWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Companion
+        fields = ["user", "name", "telephone"]
+
+
+class CompanionReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Companion
+        fields = ["id", "user", "name", "telephone"]
+        read_only_fields = fields
+
+
+class CardWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Card
+        fields = ["uid", "in_use"]
+
+class CardReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Card
+        fields = ["id", "uid", "in_use"]
+        read_only_fields = fields
+
+
+class VitalMonitorDeviceWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VitalMonitorDevice
+        fields = ["code", "in_use"]
+
+class VitalMonitorDeviceReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VitalMonitorDevice
+        fields = ["id", "code", "in_use"]
+        read_only_fields = fields
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        # Adicione estas duas linhas abaixo:
         data['id'] = self.user.id
         data['username'] = self.user.username
         data['type'] = self.user.type
 
         return data
-
-
-class AddressCreateUpdateDeleteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ['user', 'cep', 'street', 'number', 'city', 'state', 'complement', 'neighborhood']
-
-
-class AddressListRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = ['id', 'user', 'cep', 'street', 'number', 'city', 'state', 'complement', 'neighborhood']
-        read_only_fields = ['id', 'user', 'cep', 'street', 'number', 'city', 'state', 'complement', 'neighborhood']
-
-
-class PatientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Patient
-        fields = ['user', 'address', 'name', 'telephone']
-
-    def get_endereco(self, obj):
-        return obj.address.__str__()
- 
-
-class PatientDetailSerializer(serializers.ModelSerializer):
-    user = CustomUserListRetrieveSerializer()
-    address = AddressListRetrieveSerializer()
-    
-    class Meta:
-        model = Patient
-        fields = ['user', 'id', 'name', 'telephone', 'address']
-
-
-class PatientCreateUpdateSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150, required=False)
-    password = serializers.CharField(write_only=True, min_length=8, required=False)
-    cpf = serializers.CharField(max_length=11, required=False)
-    
-    name = serializers.CharField(max_length=255, required=False)
-    telephone = serializers.CharField(max_length=11, required=False)
-
-    cep = serializers.CharField(max_length=10, allow_blank=True, required=False)
-    street = serializers.CharField(max_length=100, required=False)
-    number = serializers.CharField(max_length=10, required=False)
-    city = serializers.CharField(max_length=50, required=False)
-    state = serializers.CharField(max_length=50, required=False)
-    complement = serializers.CharField(max_length=128, allow_blank=True, required=False)
-    neighborhood = serializers.CharField(max_length=128, required=False)
-
-
-    def validate(self, data):
-        user_instance = getattr(self.instance, 'user', None)
-
-        if 'cpf' in data:
-            qs = CustomUser.objects.filter(cpf=data['cpf'])
-            if user_instance:
-                qs = qs.exclude(id=user_instance.id)
-            if qs.exists():
-                raise serializers.ValidationError({"cpf": "CPF já cadastrado por outro usuário"})
-
-        if 'username' in data:
-            qs = CustomUser.objects.filter(username=data['username'])
-            if user_instance:
-                qs = qs.exclude(id=user_instance.id)
-            if qs.exists():
-                raise serializers.ValidationError({"username": "Username já cadastrado por outro usuário"})
-
-        if 'telephone' in data:
-            if not data['telephone'].isdigit() or len(data['telephone']) not in [10, 11]:
-                raise serializers.ValidationError({"telephone": "Telefone inválido"})
-
-        if 'cep' in data and data['cep'] and not data['cep'].isdigit():
-            raise serializers.ValidationError({"cep": "CEP inválido"})
-
-        return data
-
-
-class PatientListRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Patient
-        fields = ['id', 'user', 'address', 'name', 'telephone']
-        read_only_fields = ['id', 'user', 'address', 'name', 'telephone']
-
-
-class CompanionCreateUpdateDeleteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Companion
-        fields = ['name', 'telephone'] 
-
-
-class CompanionListRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Companion
-        fields = ['id', 'name', 'telephone']
-        read_only_fields = ['id', 'name', 'telephone']
-
-
-class CardCreateUpdateDeleteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Card
-        # fields = ['uid', 'in_use', 'patient']
-        fields = ['uid', 'in_use']
-
-
-class CardListRetrieveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Card
-        # fields = ['id', 'uid', 'in_use', 'patient']
-        fields = ['id', 'uid', 'in_use']

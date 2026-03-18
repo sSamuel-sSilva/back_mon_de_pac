@@ -1,137 +1,139 @@
-from django.db import transaction
-from django.db.models import F
-from rest_framework.exceptions import ValidationError as DRFValidationError
-from rest_framework.exceptions import NotFound as DRFNotFound
-from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
-from django.shortcuts import get_object_or_404
-from .models import *
-from .serializers import TravelBookingServicePostTravelBooking, ChangeTravelBookingStatus
-from django.utils import timezone
-from datetime import datetime, timedelta
+# from django.db import transaction
+# from django.db.models import F
+# from rest_framework.exceptions import ValidationError as DRFValidationError
+# from rest_framework.exceptions import NotFound as DRFNotFound
+# from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
+# from django.shortcuts import get_object_or_404
+# from .models import *
+# from .serializers import TravelBookingServicePostTravelBooking, ChangeTravelBookingStatus
+# from django.utils import timezone
+# from datetime import datetime, timedelta
 
-class TravelBookingService:
-    @staticmethod
-    @transaction.atomic
-    def create_booking(travel_id, patient_id, companion_id, need_device, request):
-        serializer = TravelBookingServicePostTravelBooking(data={
-            "travel_id": travel_id, 
-            "patient_id": patient_id, 
-            "companion_id": companion_id})
+# class TravelBookingService:
+#     @staticmethod
+#     @transaction.atomic
+#     def create_booking(travel_id, patient_id, companion_id, request, need_device=False):
+#         serializer = TravelBookingServicePostTravelBooking(data={
+#             "travel_id": travel_id, 
+#             "patient_id": patient_id, 
+#             "companion_id": companion_id})
 
-        serializer.is_valid(raise_exception=True)
+#         serializer.is_valid(raise_exception=True)
 
-        travel = serializer.validated_data["travel"]
-        patient = serializer.validated_data["patient"]
-        companion = serializer.validated_data["companion"]
+#         travel = serializer.validated_data["travel"]
+#         patient = serializer.validated_data["patient"]
+#         companion = serializer.validated_data["companion"]
 
-        if (patient.user != request.user) and (not request.user.is_staff):
-            raise DRFPermissionDenied("Usuário não tem permissão para realizar a operação.")
+#         if (patient.user != request.user) and (not request.user.is_staff):
+#             raise DRFPermissionDenied("Usuário não tem permissão para realizar a operação.")
 
+#         if travel.status != 0:
+#             raise DRFValidationError("Viagem já em andamento.")
 
-        if travel.status != 0:
-            raise DRFValidationError("Viagem já em andamento.")
+#         travel_datetime = timezone.make_aware(
+#             datetime.combine(travel.date, travel.time)
+#         )
+#         limit = travel_datetime - timedelta(hours=2)
+#         if timezone.now() > limit:
+#             raise DRFValidationError("O prazo para solicitar vaga já expirou.")
 
-        travel_datetime = timezone.make_aware(
-            datetime.combine(travel.date, travel.time)
-        )
-        limit = travel_datetime - timedelta(hours=2)
-        if timezone.now() > limit:
-            raise DRFValidationError("O prazo para solicitar vaga já expirou.")
+#         vagas_necessarias = 2 if companion else 1
+#         if travel.vacations < vagas_necessarias:
+#             raise DRFValidationError("Não há vagas suficientes.")
 
-        vagas_necessarias = 2 if companion else 1
-        if travel.vacations < vagas_necessarias:
-            raise DRFValidationError("Não há vagas suficientes.")
+#         booking = TravelBooking.objects.create(
+#             travel=travel,
+#             patient=patient,
+#             companion=companion,
+#             status=0,
+#             need_vital_monitor_device=need_device 
+#         )
 
-        booking = TravelBooking.objects.create(
-            travel=travel,
-            patient=patient,
-            companion=companion,
-            status=0
-        )
+#         return booking
 
-        return booking
+#     @staticmethod
+#     @transaction.atomic
+#     def toogle_status(travel_booking, request):
+#         serializer = ChangeTravelBookingStatus(data=request.data)
+#         serializer.is_valid(raise_exception=True)
 
+#         patient = travel_booking.patient
 
-    @staticmethod
-    @transaction.atomic
-    def toogle_status(travel_booking, request):
-        serializer = ChangeTravelBookingStatus(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        patient = travel_booking.patient
-
-        if request.user != patient.user and not request.user.is_staff:
-            raise DRFPermissionDenied("Usuário não tem premissão para realizar a operação.")
+#         if request.user != patient.user and not request.user.is_staff:
+#             raise DRFPermissionDenied("Usuário não tem premissão para realizar a operação.")
         
-        if serializer.validated_data["status"] == 2 and not request.user.is_staff:
-            raise DRFPermissionDenied("Apenas administradores podem confirmar solicitações.")
+#         if serializer.validated_data["status"] == 2 and not request.user.is_staff:
+#             raise DRFPermissionDenied("Apenas administradores podem confirmar solicitações.")
 
-        old_status = None
-        old_status = travel_booking.status
+#         old_status = None
+#         old_status = travel_booking.status
 
-        travel_booking.status = serializer.validated_data["status"]
-        travel_booking.save()
+#         travel_booking.status = serializer.validated_data["status"]
+#         travel_booking.save()
 
-        vac = 0
-        # no caso de ta confirmando
-        if (old_status == 0 and travel_booking.status == 2) or (not old_status and travel_booking.status == 2): 
+#         vac = 0
+#         # no caso de ta confirmando
+#         if (old_status == 0 and travel_booking.status == 2) or (not old_status and travel_booking.status == 2): 
             
-            card = Card.objects.filter(in_use=False).first()
-            if not card:
-                raise DRFNotFound("Sem cartões disponíveis.")
+#             card = Card.objects.filter(in_use=False).first()
+#             if not card:
+#                 raise DRFNotFound("Sem cartões disponíveis.")
 
-            if travel_booking.need_vital_monitor_device:
-                device = VitalMonitorDevice.objects.filter(in_use=False).first()
-                if not device:
-                    raise DRFNotFound("Sem dispositivos de monitoramento de sinais vitais.")
+#             if travel_booking.need_vital_monitor_device:
+#                 device = VitalMonitorDevice.objects.filter(in_use=False).first()
+#                 if not device:
+#                     raise DRFNotFound("Sem dispositivos de monitoramento de sinais vitais.")
 
-            vac = -(2 if travel_booking.companion else 1)
-            card.set_use_as_true()
-            travel_booking.card = card
-            
+#             vac = -(2 if travel_booking.companion else 1)
+#             card.set_use_as_true()
+#             travel_booking.card = card
+#             travel_booking.save() # Salva a associação do cartão
                 
 
-        # no caso de ta cancelando
-        elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
-            card = travel_booking.card
-            travel_booking.card = None
-            card.release_card()
+#         # no caso de ta cancelando
+#         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
+#             card = travel_booking.card
+#             if card:
+#                 card.release_card()
+#             travel_booking.card = None
 
-            if travel_booking.need_vital_monitor_device:
-                device = travel_booking.vital_monitor_device
-                travel_booking.vital_monitor_device = None
-                device.release_device()
+#             if travel_booking.need_vital_monitor_device:
+#                 device = travel_booking.vital_monitor_device
+#                 if device:
+#                     device.release_device()
+#                 travel_booking.vital_monitor_device = None
 
-            travel_booking.card = None
-            vac = 2 if travel_booking.companion else 1
+#             vac = 2 if travel_booking.companion else 1
+#             travel_booking.save() # <-- ESSA LINHA É CRUCIAL PARA SALVAR A DESVINCULAÇÃO DO CARTÃO
             
 
-        if vac != 0:
-            travel = travel_booking.travel
-            Travel.objects.filter(pk=travel.pk).update(
-                vacations=F('vacations') + vac
-            )
+#         if vac != 0:
+#             travel = travel_booking.travel
+#             Travel.objects.filter(pk=travel.pk).update(
+#                 vacations=F('vacations') + vac
+#             )
 
 
-class BoardingRecordService:
-    def create_booking(travel_booking_id, uid_card, bus_id):
-        current_travel_booking = get_object_or_404(TravelBooking, pk=travel_booking_id)
-        current_card = get_object_or_404(Card, uid=uid_card)
-        current_bus = get_object_or_404(Bus, pk=bus_id)
+# class BoardingRecordService:
+#     @staticmethod
+#     def create_booking(travel_booking_id, uid_card, bus_id):
+#         current_travel_booking = get_object_or_404(TravelBooking, pk=travel_booking_id)
+#         current_card = get_object_or_404(Card, uid=uid_card)
+#         current_bus = get_object_or_404(Bus, pk=bus_id)
             
-        current_boarding_record, created = BoardingRecord.objects.get_or_create (
-            travel_booking=current_travel_booking,
-            defaults={
-                'patient': current_travel_booking.patient,
-                'card': current_card,
-                'bus': current_bus,
-            }
-        )
+#         current_boarding_record, created = BoardingRecord.objects.get_or_create (
+#             travel_booking=current_travel_booking,
+#             defaults={
+#                 'patient': current_travel_booking.patient,
+#                 'card': current_card,
+#                 'bus': current_bus,
+#             }
+#         )
 
-        current_boarding_record.on_board = not current_boarding_record.on_board
+#         current_boarding_record.on_board = not current_boarding_record.on_board
 
-        now = datetime.now(tz)
-        current_boarding_record.time = now().strftime("%H:%M:%S")
-        current_boarding_record.save()
+#         now = timezone.now()
+#         current_boarding_record.time = now.strftime("%H:%M:%S")
+#         current_boarding_record.save()
 
-        return current_boarding_record
+#         return current_boarding_record

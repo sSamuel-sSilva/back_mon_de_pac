@@ -1,76 +1,48 @@
 from django.db import transaction
-from rest_framework.exceptions import ValidationError as DRFValidationError
-from rest_framework.exceptions import NotFound as DRFNotFound
-from .serializers import PatientCreateUpdateSerializer
-from .models import *
+from rest_framework import serializers
+from .models import CustomUser, Address, Patient
+from .serializers import CustomUserWriteSerializer, AddressWriteSerializer, PatientWriteSerializer
 
-class PatientService:
+
+class PatientCreateService:
     @staticmethod
     @transaction.atomic
-    def create_patient(request_data):
-        serializer = PatientCreateUpdateSerializer(data=request_data)
-        serializer.is_valid(raise_exception=True)
+    def create(user_data, address_data, patient_data):
+        if CustomUser.objects.filter(username=user_data["username"]).exists():
+            raise serializers.ValidationError({"username": "Username já cadastrado por outro usuário"})
 
-        data = serializer.validated_data
-        
+        if CustomUser.objects.filter(cpf=user_data["cpf"]).exists():
+            raise serializers.ValidationError({"cpf": "CPF já cadastrado por outro usuário"})
+
+        user = CustomUser.objects.create_user(**user_data, type=CustomUser.UserType.PACIENTE)
+        address = Address.objects.create(user=user, **address_data)
+        patient = Patient.objects.create(user=user, address=address, **patient_data)
+
+        return patient
+
+
+class PatientUpdateService:
+    @staticmethod
+    def update(patient, user_data, address_data, patient_data):
+        user_instance = patient.user
+        address_instance = patient.address
+
         with transaction.atomic():
-            user = CustomUser.objects.create_user(
-                username = data["username"],
-                password = data["password"],
-                cpf = data["cpf"],
-                type= 3
-            )
+            for field, value in user_data.items():
+                if field == "password":
+                    user_instance.set_password(value)
+                else:
+                    setattr(user_instance, field, value)
+            user_instance.save()
 
-            address = Address.objects.create(
-                user = user,
-                cep = data["cep"],
-                street = data["street"],
-                number = data["number"],
-                city = data["city"],
-                state = data["state"],
-                complement = data["complement"],
-                neighborhood = data["neighborhood"]
-            )
+            for field, value in address_data.items():
+                setattr(address_instance, field, value)
+            address_instance.save()
 
-            patient = Patient.objects.create(
-                user = user,
-                address = address,
-                name = data["name"],
-                telephone = data["telephone"]
-            )
+            for field, value in patient_data.items():
+                setattr(patient, field, value)
+            patient.save()
 
-            return patient
+
+        return patient
     
-
-    def update_patient(patient_instance, request_data):
-        serializer = PatientCreateUpdateSerializer(
-            instance=patient_instance,
-            data=request_data,
-            partial=True  
-        )
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        user = patient_instance.user
-        address = patient_instance.address
-
-        with transaction.atomic():
-            if 'username' in data:
-                user.username = data['username']
-            if 'cpf' in data:
-                user.cpf = data['cpf']
-            if 'password' in data:
-                user.set_password(data['password'])
-            user.save()
-
-            for field in ['cep', 'street', 'number', 'city', 'state', 'complement', 'neighborhood']:
-                if field in data:
-                    setattr(address, field, data[field])
-            address.save()
-
-            for field in ['name', 'telephone']:
-                if field in data:
-                    setattr(patient_instance, field, data[field])
-            patient_instance.save()
-
-        return patient_instance

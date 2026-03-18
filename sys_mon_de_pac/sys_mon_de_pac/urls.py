@@ -42,7 +42,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('admin/', admin.site.urls), # ajeitar para a rota de admin não ser admin, ou então remover e usar só a do front
     path('users/', include('users.urls')),
-    path('travels/', include('travels.urls')),
+    # path('travels/', include('travels.urls')),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
