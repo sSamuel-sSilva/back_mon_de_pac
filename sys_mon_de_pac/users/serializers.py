@@ -4,19 +4,41 @@ from .models import Address, Card, Companion, CustomUser, Patient, VitalMonitorD
 
 
 class CustomUserWriteSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = CustomUser
         fields = ["username", "password", "is_staff", "cpf", "type"]
 
+
+    def _can_assign_privileged_type(self, requested_type):
+        if requested_type not in [CustomUser.UserType.ADMIN, CustomUser.UserType.MONITOR]:
+            return True
+
+        request = self.context.get("request")
+        return bool(request and request.user and request.user.is_superuser)
+
+
     def create(self, validated_data):
         password = validated_data.pop("password")
-        user = CustomUser(**validated_data)
+        requested_type = validated_data.pop("type", CustomUser.UserType.PACIENTE)
+
+        if not self._can_assign_privileged_type(requested_type):
+            raise serializers.ValidationError({"type": "Sem permissão para atribuir tipo privilegiado."})
+
+        user = CustomUser(type=requested_type, **validated_data)
         user.set_password(password)
         user.save()
         return user
 
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
+        requested_type = validated_data.pop("type", None)
+
+        if requested_type is not None:
+            if not self._can_assign_privileged_type(requested_type):
+                raise serializers.ValidationError({"type": "Sem permissão para atribuir tipo privilegiado."})
+            instance.type = requested_type
 
         for field, value in validated_data.items():
             setattr(instance, field, value)

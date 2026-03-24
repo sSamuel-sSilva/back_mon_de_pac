@@ -11,11 +11,8 @@ class PatientCreateService:
         username = user_data["username"]
         cpf = user_data["cpf"]
 
-        if CustomUser.objects.filter(username=username).exists():
-            raise serializers.ValidationError({"username": "Username já cadastrado por outro usuário"})
-
-        if cpf and CustomUser.objects.filter(cpf=cpf).exists():
-            raise serializers.ValidationError({"cpf": "CPF já cadastrado por outro usuário"})
+        if (CustomUser.objects.filter(username=username).exists()) or (cpf and CustomUser.objects.filter(cpf=cpf).exists()):
+            raise serializers.ValidationError({"erro": "Credenciais inválidas."})
 
         user = CustomUser.objects.create_user(**user_data, type=CustomUser.UserType.PACIENTE)
         
@@ -34,11 +31,8 @@ class PatientUpdateService:
         username = user_data.get("username")
         cpf = user_data.get("cpf")
 
-        if username and CustomUser.objects.exclude(pk=user_instance.pk).filter(username=username).exists():
-            raise serializers.ValidationError({"username": "Username já cadastrado por outro usuário"})
-
-        if cpf and CustomUser.objects.exclude(pk=user_instance.pk).filter(cpf=cpf).exists():
-            raise serializers.ValidationError({"cpf": "CPF já cadastrado por outro usuário"})
+        if (username and CustomUser.objects.exclude(pk=user_instance.pk).filter(username=username).exists()) or (cpf and CustomUser.objects.exclude(pk=user_instance.pk).filter(cpf=cpf).exists()):
+            raise serializers.ValidationError({"erro": "Credenciais inválidas."})
 
         with transaction.atomic():
             for field, value in user_data.items():

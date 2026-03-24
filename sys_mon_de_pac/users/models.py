@@ -15,6 +15,13 @@ class CustomUser(AbstractUser):
     type = models.IntegerField(default=UserType.PACIENTE, choices=UserType.choices, verbose_name='Tipo de Usuário')
 
 
+    def save(self, *args, **kwargs):
+        self.is_staff = self.type in [self.UserType.ADMIN, self.UserType.MONITOR]
+        self.is_superuser = self.type == self.UserType.ADMIN
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
     def __str__(self):
         return self.username
 
