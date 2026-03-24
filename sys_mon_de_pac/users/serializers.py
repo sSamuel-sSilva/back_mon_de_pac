@@ -6,7 +6,26 @@ from .models import Address, Card, Companion, CustomUser, Patient, VitalMonitorD
 class CustomUserWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["username", "password", "cpf", "type"]
+        fields = ["username", "password", "is_staff", "cpf", "type"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = CustomUser(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance
 
     
 class CustomUserReadSerializer(serializers.ModelSerializer):
@@ -75,7 +94,6 @@ class VitalMonitorDeviceReadSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['id'] = self.user.id
         data['username'] = self.user.username
         data['type'] = self.user.type
 

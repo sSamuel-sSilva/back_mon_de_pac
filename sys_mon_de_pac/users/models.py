@@ -15,29 +15,6 @@ class CustomUser(AbstractUser):
     type = models.IntegerField(default=UserType.PACIENTE, choices=UserType.choices, verbose_name='Tipo de Usuário')
 
 
-    def save(self, *args, **kwargs):
-        if self.type in [self.UserType.ADMIN, self.UserType.MONITOR]:
-            self.is_staff = True
-
-        if self.type == self.UserType.ADMIN:
-            self.is_superuser = True
-            self.type = 0 
-
-        if self.type == self.UserType.MONITOR:
-            self.type = 2
-
-        super().save(*args, **kwargs)
-
-
-    def clean(self):
-        super().clean()
-
-        if self.type not in [self.UserType.ADMIN, self.UserType.MONITOR] and not self.is_superuser and not self.cpf:
-            raise ValidationError({
-                'cpf': 'CPF é obrigatório para este tipo de usuário.'
-            })
-
-
     def __str__(self):
         return self.username
 

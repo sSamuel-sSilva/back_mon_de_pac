@@ -33,7 +33,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             permission_classes = [AllowAny]
-        if self.action in ["list", "retrieve"]:
+        elif self.action in ["list", "retrieve"]:
             permission_classes = [IsAuthenticated]
         else:
             permission_classes = [CustomPermission]
@@ -56,7 +56,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         user_serializer.is_valid(raise_exception=True)
 
         address_serializer = AddressWriteSerializer(data=request.data["address"])
-        address_serializer.is_valid(raise_exception=True)        
+        address_serializer.is_valid(raise_exception=True)
 
         patient_serializer = PatientWriteSerializer(data=request.data["patient"])
         patient_serializer.is_valid(raise_exception=True)
@@ -70,7 +70,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(res, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None, *args, **kwargs):
-        patient = Patient.objects.get(pk=pk)
+        patient = self.get_object()
 
         user_serializer = CustomUserWriteSerializer(
             instance=patient.user,
@@ -100,7 +100,7 @@ class PatientViewSet(viewsets.ModelViewSet):
             patient_serializer.validated_data
         )
 
-        res = PatientQuery.get_patient_detail(request.user, pk)
+        res = PatientQuery.get_patient_detail(request.user, patient.pk)
         return Response(res, status=status.HTTP_200_OK)
 
         
@@ -121,14 +121,8 @@ class CompanionViewSet(viewsets.ModelViewSet):
     
     def retrieve(self, request, pk=None, *args, **kwargs):
         data = CompanionQuery.get_companion_s(request.user, pk=pk)
-        if not data:
-            return Response({"detail": "Not found."}, status=404)
         return Response(data, status=status.HTTP_200_OK)
     
-
-    def get_serializer_class(self):
-        if self.action in ["create", "update"]:
-            return CompanionWriteSerializer
 
 
 class CardViewSet(viewsets.ModelViewSet):
@@ -138,7 +132,7 @@ class CardViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
             return CardReadSerializer
-        return CardWriteSerializer  
+        return CardWriteSerializer
 
 
 class VitalMonitorDeviceViewSet(viewsets.ModelViewSet):

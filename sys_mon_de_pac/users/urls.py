@@ -8,12 +8,11 @@ VitalMonitorDevice
 router = DefaultRouter()
 router.register(r'user', CustomUserViewSet, basename='user')
 router.register(r'patient', PatientViewSet, basename='patient')
-# router.register(r'address', AddressViewSet, basename='address')
 router.register(r'companion', CompanionViewSet, basename='companion')
 router.register(r'card', CardViewSet, basename='card'),
 router.register(r'vital_device', VitalMonitorDeviceViewSet, basename='vital_device'),
 
 
 urlpatterns = [
-    path('', include(router.urls))
+    path("", include(router.urls))
 ]
