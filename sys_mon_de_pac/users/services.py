@@ -37,6 +37,7 @@ class PatientUpdateService:
         with transaction.atomic():
             for field, value in user_data.items():
                 if field == "password":
+                    # dps tem que trocar para a troca da senha ser pelo email
                     user_instance.set_password(value)
                 else:
                     setattr(user_instance, field, value)

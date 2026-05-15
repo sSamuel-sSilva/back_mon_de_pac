@@ -1,139 +1,161 @@
-# from django.db import transaction
 # from django.db.models import F
 # from rest_framework.exceptions import ValidationError as DRFValidationError
 # from rest_framework.exceptions import NotFound as DRFNotFound
 # from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
-# from django.shortcuts import get_object_or_404
-# from .models import *
 # from .serializers import TravelBookingServicePostTravelBooking, ChangeTravelBookingStatus
-# from django.utils import timezone
-# from datetime import datetime, timedelta
 
-# class TravelBookingService:
-#     @staticmethod
-#     @transaction.atomic
-#     def create_booking(travel_id, patient_id, companion_id, request, need_device=False):
-#         serializer = TravelBookingServicePostTravelBooking(data={
-#             "travel_id": travel_id, 
-#             "patient_id": patient_id, 
-#             "companion_id": companion_id})
+from django.db import transaction
+from sys_mon_de_pac.travels.serializers import TravelBookingReadSerializer, TravelBookingWriteSerializer
+from .models import *
+from users.models import Patient, VitalMonitorDevice
+from rest_framework import serializers
+from datetime import datetime, timedelta
+from django.utils import timezone
 
-#         serializer.is_valid(raise_exception=True)
 
-#         travel = serializer.validated_data["travel"]
-#         patient = serializer.validated_data["patient"]
-#         companion = serializer.validated_data["companion"]
+class TravelBookingService:
+    @staticmethod
+    @transaction.atomic
+    def create(request, data):
+        data["status"] = 0
 
-#         if (patient.user != request.user) and (not request.user.is_staff):
-#             raise DRFPermissionDenied("Usuário não tem permissão para realizar a operação.")
+        patient = data.get("patient")
+        travel = data.get("travel")
+        companion = data.get("companion")
 
-#         if travel.status != 0:
-#             raise DRFValidationError("Viagem já em andamento.")
+        travel = Travel.objects.select_for_update().get(pk=travel.pk)
 
-#         travel_datetime = timezone.make_aware(
-#             datetime.combine(travel.date, travel.time)
-#         )
-#         limit = travel_datetime - timedelta(hours=2)
-#         if timezone.now() > limit:
-#             raise DRFValidationError("O prazo para solicitar vaga já expirou.")
-
-#         vagas_necessarias = 2 if companion else 1
-#         if travel.vacations < vagas_necessarias:
-#             raise DRFValidationError("Não há vagas suficientes.")
-
-#         booking = TravelBooking.objects.create(
-#             travel=travel,
-#             patient=patient,
-#             companion=companion,
-#             status=0,
-#             need_vital_monitor_device=need_device 
-#         )
-
-#         return booking
-
-#     @staticmethod
-#     @transaction.atomic
-#     def toogle_status(travel_booking, request):
-#         serializer = ChangeTravelBookingStatus(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-
-#         patient = travel_booking.patient
-
-#         if request.user != patient.user and not request.user.is_staff:
-#             raise DRFPermissionDenied("Usuário não tem premissão para realizar a operação.")
+        if  (patient.user != request.user) and (not request.user.is_staff):
+            raise serializers.ValidationError("Usuário não tem permissão para realizar a operação.")
         
-#         if serializer.validated_data["status"] == 2 and not request.user.is_staff:
-#             raise DRFPermissionDenied("Apenas administradores podem confirmar solicitações.")
+        if travel.status != 0:
+            raise serializers.ValidationError("Solicitação inválida: Viagem não está mais pendente.")
+        
+        travel_datetime = timezone.make_aware(
+            datetime.combine(travel.date, travel.time),
+            timezone.get_current_timezone()
+        )
+        limit = travel_datetime - timedelta(hours=2)
+        if timezone.now() > limit:
+            raise serializers.ValidationError("O prazo para solicitações já expirou.")
+        
+        needed = 2 if companion else 1
+        if travel.vacations >= needed:
+            # caso tenha vagas suficientes, prepara o terreno
+            data = TravelBookingService.confirm_booking(data, needed)
+        
+        return TravelBooking.objects.create(**data)
+    
 
-#         old_status = None
-#         old_status = travel_booking.status
+    @staticmethod
+    def update(request, instance, data):
+        patient = instance.patient
 
-#         travel_booking.status = serializer.validated_data["status"]
-#         travel_booking.save()
+        if  (patient.user != request.user) and (not request.user.is_staff):
+            raise serializers.ValidationError("Usuário não tem permissão para realizar a operação.")
+        
+        fields = ["need_vital_monitor_device", "observations"]
+        if (request.user.is_staff):
+            fields.extend(["travel", "card", "vital_monitor_device"]) 
 
-#         vac = 0
-#         # no caso de ta confirmando
-#         if (old_status == 0 and travel_booking.status == 2) or (not old_status and travel_booking.status == 2): 
-            
-#             card = Card.objects.filter(in_use=False).first()
-#             if not card:
-#                 raise DRFNotFound("Sem cartões disponíveis.")
+        for field, value in data.items():
+            if field in fields:
+                setattr(instance, field, value)
+        
+        instance.save()
 
-#             if travel_booking.need_vital_monitor_device:
-#                 device = VitalMonitorDevice.objects.filter(in_use=False).first()
-#                 if not device:
-#                     raise DRFNotFound("Sem dispositivos de monitoramento de sinais vitais.")
 
-#             vac = -(2 if travel_booking.companion else 1)
-#             card.set_use_as_true()
-#             travel_booking.card = card
-#             travel_booking.save() # Salva a associação do cartão
+    @staticmethod
+    @transaction.atomic
+    def cancelBooking(request, instance, reason):
+        patient = instance.patient
+
+        if  (patient.user != request.user) and (not request.user.is_staff):
+            raise serializers.ValidationError("Usuário não tem permissão para realizar a operação.")
+
+        if instance.status == 1:
+            raise serializers.ValidationError("Não é possível cancelar uma solicitação que já está cancelada.")
+        
+        travel = Travel.objects.select_for_update().get(travel=instance.travel)
+        if instance.status == 2:
+            total_vacations = 2 if instance.companion else 1
+            travel.vacations += total_vacations
+        
+            if instance.card:
+                Card.objects.filter(pk=instance.card_id).update(in_use=False)
+            if instance.vital_monitor_device:
+                VitalMonitorDevice.objects.filter(pk=instance.vital_monitor_device_id).update(in_use=False)
+
+        instance.status = 1
+        instance.card = None
+        instance.vital_monitor_device = None
+        instance.save()
+
+        next_inline = TravelBooking.objects.filter(travel=travel, status=0).order_by('created_at').first()
+
+        if next_inline:
+            needed_next = 2 if next_inline.companion else 1
+            if travel.vacations >= needed_next:
                 
+                card = Card.objects.select_for_update().filter(in_use=False).first()
+                if card:
+                    next_inline.card = card
+                    card.in_use = True
+                    card.save()
+                    
+                    if next_inline.need_vital_monitor_device:
+                        dev = VitalMonitorDevice.objects.select_for_update().filter(in_use=False).first()
+                        if dev:
+                            next_inline.vital_monitor_device = dev
+                            dev.in_use = True
+                            dev.save()
+                    
+                    travel.vacations -= needed_next
+                    next_inline.status = 2
+                    next_inline.save()
 
-#         # no caso de ta cancelando
-#         elif old_status == 2 and travel_booking.status == 1 or (old_status == 2 and travel_booking.status == 0): 
-#             card = travel_booking.card
-#             if card:
-#                 card.release_card()
-#             travel_booking.card = None
+        travel.save()
 
-#             if travel_booking.need_vital_monitor_device:
-#                 device = travel_booking.vital_monitor_device
-#                 if device:
-#                     device.release_device()
-#                 travel_booking.vital_monitor_device = None
-
-#             vac = 2 if travel_booking.companion else 1
-#             travel_booking.save() # <-- ESSA LINHA É CRUCIAL PARA SALVAR A DESVINCULAÇÃO DO CARTÃO
-            
-
-#         if vac != 0:
-#             travel = travel_booking.travel
-#             Travel.objects.filter(pk=travel.pk).update(
-#                 vacations=F('vacations') + vac
-#             )
+        return CancelTravelBookingTicket.objects.create(user=request.user, travel=travel, reason=reason)
 
 
-# class BoardingRecordService:
-#     @staticmethod
-#     def create_booking(travel_booking_id, uid_card, bus_id):
-#         current_travel_booking = get_object_or_404(TravelBooking, pk=travel_booking_id)
-#         current_card = get_object_or_404(Card, uid=uid_card)
-#         current_bus = get_object_or_404(Bus, pk=bus_id)
-            
-#         current_boarding_record, created = BoardingRecord.objects.get_or_create (
-#             travel_booking=current_travel_booking,
-#             defaults={
-#                 'patient': current_travel_booking.patient,
-#                 'card': current_card,
-#                 'bus': current_bus,
-#             }
-#         )
+    @staticmethod
+    @transaction.atomic
+    def confirm_booking(data, needed):
+        travel = data.get("travel")
+        travel = Travel.objects.select_for_update().get(travel=travel)
 
-#         current_boarding_record.on_board = not current_boarding_record.on_board
 
-#         now = timezone.now()
-#         current_boarding_record.time = now.strftime("%H:%M:%S")
-#         current_boarding_record.save()
+        card = Card.objects.select_for_update().filter(in_use=False).first()
+        if not card:
+            raise serializers.ValidationError("Sem cartões disponíveis.")
+        
+        device = None
+        if data.get("need_vital_monitor_device"):
+            device = VitalMonitorDevice.objects.select_for_update().filter(in_use=False).first()
+            if not device:
+                raise serializers.ValidationError("Sem dispositivos.")
 
-#         return current_boarding_record
+        travel.vacations -= needed
+        travel.save()
+
+        card.in_use = True
+        card.save()
+        
+        if device:
+            data["vital_monitor_device"] = device
+            device.in_use = True
+            device.save()
+
+        data["card"] = card
+        data["status"] = 2
+
+        return data
+    
+
+class TravelService:
+    pass
+
+# implementar o cancelamento da viagem
+# só uma viagem ainda pendente pode ser cancelada
+# todos as solicitações, independente do status, serão canceladas

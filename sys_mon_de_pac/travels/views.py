@@ -1,80 +1,66 @@
-# from rest_framework import viewsets, status
-# from rest_framework.response import Response
-# from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
-# from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-# from rest_framework.decorators import action, api_view, permission_classes
-# from django_filters.rest_framework import DjangoFilterBackend
-# # from channels.layers import get_channel_layer
-# from asgiref.sync import async_to_sync
-# from .services import TravelBookingService
-# from .models import *
-# from users.models import Card, Patient
-# from .serializers import *
-# from .filters import TravelBookingFilter
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.decorators import action, api_view, permission_classes
+from django_filters.rest_framework import DjangoFilterBackend
+from asgiref.sync import async_to_sync
 
-# from django.contrib.auth import authenticate
-# from rest_framework.authtoken.models import Token
+from sys_mon_de_pac.travels.queries import TravelBookingQuery, TravelQuery
+from .services import TravelBookingService
+from .models import *
+from users.models import Card, Patient
+from .serializers import *
+from .filters import TravelBookingFilter
+from users.permissions import CustomPermission
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def login_api(request):
-#     username = request.data.get('username')
-#     password = request.data.get('password')
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+
     
-#     user = authenticate(username=username, password=password)
+class BusViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = Bus.objects.all()
     
-#     if user:
-#         token, _ = Token.objects.get_or_create(user=user)
-#         return Response({
-#             'token': token.key,
-#             'user': {
-#                 'username': user.username,
-#                 'type': getattr(user, 'type', 'patient') # Pega o tipo do utilizador (admin/monitor/patient)
-#             }
-#         })
-#     else:
-#         return Response({'error': 'Credenciais inválidas'}, status=400)
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return BusReadSerializer
+        return BusWriteSerializer 
+
+
+class DestinyViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = Destiny.objects.all()
     
-# class BusViewSet(viewsets.ModelViewSet):
-#     permission_classes = [IsAdminUser]
-#     queryset = Bus.objects.all()
-    
-#     def get_serializer_class(self):
-#         if self.action == 'list' or self.action == 'retrieve':
-#             return BusListRetrieveSerializer
-#         return BusCreateUpdateDeleteSerializer 
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return DestinyReadSerializer
+        return DestinyWriteSerializer 
 
 
-# class DestinyViewSet(viewsets.ModelViewSet):
-#     permission_classes = [IsAdminUser]
-#     queryset = Destiny.objects.all()
-    
-#     def get_serializer_class(self):
-#         if self.action == 'list' or self.action == 'retrieve':
-#             return DestinyListRetrieveSerializer
-#         return DestinyCreateUpdateDeleteSerializer 
+class TravelViewSet(viewsets.ModelViewSet):
+    queryset = Travel.objects.all() 
+
+    def get_permissions(self):
+        if self.action == 'list':
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAdminUser]
+        return [p() for p in permission_classes]
 
 
-# class TravelViewSet(viewsets.ModelViewSet):
-#     queryset = Travel.objects.all() 
-
-#     def get_permissions(self):
-#         if self.action == 'list':
-#             permission_classes = [IsAuthenticated]
-#         else:
-#             permission_classes = [IsAdminUser]
-#         return [p() for p in permission_classes]
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return TravelReadSerializer
+        return TravelReadSerializer
 
 
-#     def get_serializer_class(self):
-#         if self.action == 'list':
-#             return TravelListSerializer
-
-#         if self.action == 'retrieve':
-#             return TravelRetrieveSerializer
-
-#         return TravelCreateUpdateDeleteSerializer
-
+    @action(detail=True, methods=["get"])
+    def get_bookings_by_travel(self, reqeust, pk=None):
+        data = TravelQuery.get_bookings_by_travel(self.request.user, pk)
+        if not data:
+            return Response({"detail": "Not found."}, status=404)
+        return Response(data)
 
 #     #URL = /travels/travel/{id}/change_travel_status/
 #     @action(detail=True, methods=["patch", "put"])
@@ -103,111 +89,69 @@
 #         serializer = AdminTravelBookingSerializer(qs, many=True)
 #         return Response(serializer.data)
 
-
-# class TravelBookingViewSet(viewsets.ModelViewSet):
-#     queryset = queryset = TravelBooking.objects.all()
-#     filterset_class = TravelBookingFilter
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         if user.is_staff:
-#             return TravelBooking.objects.all()
-#         else:
-#             return TravelBooking.objects.filter(patient__user=user)
+# pegar os bookings a partir de travel
+# pegar os pacientes que estão na viagem
+# pegar acompanhantes a apartir da viagem
 
 
-#     def get_permissions(self):
-#         if self.action in ['post_travel_booking', 'change_travel_booking_status', 'list', 'retrieve']:
-#             permission_classes = [IsAuthenticated]
-#         else:
-#             permission_classes = [IsAdminUser]
-#         return [p() for p in permission_classes]
+class TravelBookingViewSet(viewsets.ModelViewSet):
+    queryset = queryset = TravelBooking.objects.all()
+    # filterset_class = TravelBookingFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return TravelBooking.objects.all()
+        else:
+            return TravelBooking.objects.filter(patient__user=user)
 
 
-#     def get_serializer_class(self):
-#         if self.action == 'list':
-#             return TravelBookingListSerializer
-
-#         if self.action == 'retrieve':
-#             return TravelBookingRetrieveSerilizer
-
-#         return TravelBookingCreateUpdateDeleteSerializer
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [CustomPermission]
+        return [p() for p in permission_classes]
 
 
-#     #URL = /travels/travel_booking/get_travel_booking/
-#     @action(detail=False, methods=["get"])
-#     def get_all_travel_booking(self, request, pk=None):
-#         t = self.get_queryset()
-#         serializer = AdminTravelBookingSerializer(t, many=True)
-#         return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return TravelBookingReadSerializer
+        return TravelBookingWriteSerializer
 
 
-#     # #URL = /travels/travel_booking/get_travel_booking_travel/?travel_id={id}/
-#     # @action(detail=False, methods=["get"])
-#     # def get_travel_booking_travel(self, request, pk=None):
-#     #     travel_id = request.GET.get("travel_id")
-            
-#     #     qs = self.get_queryset().filter(travel=travel_id, status=0)
-#     #     serializer = AdminTravelBookingSerializer(qs, many=True)
-#     #     return Response(serializer.data)
-
-
-    #URL = /travels/travel_booking/post_travel_booking/
-    # @action(detail=False, methods=["post"])
-    # def post_travel_booking(self, request):
-    #     travel_id = request.data.get("travel_id")
-    #     patient_id = request.data.get("patient_id")
-    #     companion_id = request.data.get("companion_id")
-    #     need_device = request.data.get("need_device")
-
-    #     booking = TravelBookingService.create_booking(
-    #         travel_id=travel_id,
-    #         patient_id=patient_id,
-    #         companion_id=companion_id,
-    #         need_device=need_device,
-    #         request=request)
-
-#         serializer = TravelBookingCreateUpdateDeleteSerializer(booking)
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-#     #URL = /travels/travel_booking/change_travel_booking_status/{id}/
-#     @action(detail=True, methods=["put", "patch"])
-#     def change_travel_booking_status(self, request, pk):
-#         TravelBookingService.toogle_status(self.get_object(), request)
-
-#         serializer = TravelBookingRetrieveSerilizer(self.get_object())
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-#     @action(detail=False, methods=["get"])
-#     def get_bookigns_by_travel_app(self, request):
-#         queryset = self.get_queryset()
-#         queryset = self.filter_queryset(queryset)
-#         serializer = TravelBookingUserInfo(queryset, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-#     @action(detail=False, methods=["get"])
-#     def get_patients_by_travel(self, request):
-#         # travel_id = request.query_params.get('travel', None)
-#         queryset = self.get_queryset()
-#         queryset = self.filter_queryset(queryset)
-#         serializer = PatientByTravel(queryset, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+    def list(self, request, *args, **kwargs):
+        data = TravelBookingQuery.get_travel_booking_all(request.user)
+        return Response(data)
 
     
-#     @action(detail=False, methods=["get"])
-#     def get_companions_by_travel(self, request):
-#         # travel_id = request.query_params.get('travel', None)
-#         queryset = self.get_queryset()
-#         queryset = queryset.filter(companion__isnull=False)
-#         queryset = self.filter_queryset(queryset)
-#         print(queryset)
-#         serializer = CompanionByTravel(queryset, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+    def retrieve(self, request, pk=None, *args, **kwargs):
+        data = TravelBookingQuery.get_travel_booking_detail(request.user, pk)
+        if not data:
+            return Response({"detail": "Not found."}, status=404)
+        return Response(data)
 
-        
+
+    def create(self, request, *args, **kwargs):
+        booking = TravelBookingService.create_booking(request.data, request)
+        serializer = TravelBookingReadSerializer(booking)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+    def update(self, request, pk=None, *args, **kwargs):
+        instance = self.get_object()
+        booking = TravelBookingService.update_booking(instance, request.data, request)
+        serializer = TravelBookingReadSerializer(booking)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def cancel_booking(self, request, pk=None):
+        instance = self.get_object()
+        reason = request.data.get("reason", "")
+        cancel = TravelBookingService.cancel_booking(instance, reason, request)
+        serializer = CancelTravelBookingTicketSerializer(cancel)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # class BoardingRecordViewSet(viewsets.ModelViewSet):
 #     # authentication_classes = [JWTAuthetication]

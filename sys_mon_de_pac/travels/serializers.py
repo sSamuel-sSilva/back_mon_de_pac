@@ -1,9 +1,69 @@
-# from rest_framework import serializers
-# from users.serializers import PatientListRetrieveSerializer, CompanionListRetrieveSerializer
-# from. models import *
-# from users.models import CustomUser
-# from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers
+from. models import Bus, Destiny, Travel, TravelBooking, CancelTravelBookingTicket
  
+
+class BusWriteSerailizer(serializers.ModelSerializer):
+    class Meta:
+        model = Bus
+        fields = ["identifier_code"]
+
+
+class BusReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bus
+        fields = ["id", "identifier_code"]
+
+
+class DestinyWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Destiny
+        fields = ["destiny"]
+
+
+class DestinyReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Destiny
+        fields = ["id", "destiny"]
+
+
+class TravelWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Travel
+        fields = ["owner", "monitor", "driver", "destiny", 
+                  "bus", "vacations", "date", "time", "status"]
+
+
+class TravelReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Travel
+        fields = ["id", "owner", "monitor", "driver", "destiny", 
+                  "bus", "vacations", "date", "time", "status"]
+
+
+class TravelBookingWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TravelBooking
+        fields = ["travel", "patient", "companion", "card", "need_vital_monitor_device", "vital_monitor_device", "observations"]
+
+
+class TravelBookingReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TravelBooking
+        fields = ["id", "travel", "patient", "companion", "card", "need_vital_monitor_device",
+                  "vital_monitor_device", "date", "time", "observations", "status"]
+
+
+class CancelTravelBookingTicketWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CancelTravelBookingTicket
+        fields = ["owner", "travel_booking", "reason"]
+
+
+class CancelTravelBookingTicketReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CancelTravelBookingTicket
+        fields = ["id", "travel_booking", "reason", "date", "time"]
+
 
 # class BusListRetrieveSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -136,11 +196,6 @@
 #     patient = serializers.SerializerMethodField()
 #     companion = serializers.SerializerMethodField()
 
-<<<<<<< Updated upstream:sys_mon_de_pac/travels/serializers.py
-    class Meta:
-        model = TravelBooking
-        fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status']
-=======
 #     status_label = serializers.CharField(
 #         source="get_status_display",
 #         read_only=True
@@ -149,7 +204,6 @@
 #     class Meta:
 #         model = TravelBooking
 #         fields = ['id', 'travel', 'patient', 'companion', 'date', 'time', 'status', 'status_label']
->>>>>>> Stashed changes:travels/serializers.py
 
 #     def get_travel(self, obj):
 #         return obj.travel.__str__()
